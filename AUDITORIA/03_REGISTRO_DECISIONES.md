@@ -82,3 +82,107 @@ Decisión general: **se aceptan las recomendaciones de la tabla §1**, con estos
 | AMB-18 | Corregir "Dirección General". |
 
 **Matriz RBAC objetivo resultante**: `admin` (acceso total), `gestor` (por confirmar), `evaluador vía enlace` (solo su instrumento, una vez). Ningún otro rol con sesión.
+
+---
+
+## 5. Decisiones del informe ejecutivo (2026-11-13, Natalia Rodríguez)
+
+| ID | Decisión |
+|---|---|
+| D-01 | **La plataforma nunca se publicó: solo corrió en local.** No hace falta rotar las claves de BD, SMTP ni Gemini. Igual se saca el censo del código (W1-4) y se limpia el historial de git (W0-5) antes de cualquier publicación. |
+| D-02 | **Se agrega el rol `director`, uno por Dirección.** No hay un rol "gestor" aparte. Ver el detalle abajo. |
+
+### D-02 — Rol Director (modifica AMB-09 y precisa AMB-11)
+
+**Roles con sesión:** el Administrador Maestro y los 8 Directores:
+- Talento Humano
+- Administración y Finanzas
+- Control Interno
+- Tecnología de la Información
+- Compras
+- Comercial
+- Operaciones
+- Transporte y Logística
+
+El resto de los evaluadores sigue entrando solo por enlace personal.
+
+**Menú del Director:**
+1. **Evaluaciones.** Solo los instrumentos que le tocan: *Evaluación a Subordinados* y *Autoevaluación*.
+2. **Resultados de la Dirección.** Un dashboard ejecutivo con:
+   - la campana de Gauss, tomando como población a los colaboradores de su Dirección;
+   - los promedios generales de la Dirección;
+   - un buscador por nombre para ver los resultados individuales de un colaborador.
+
+**Regla de seguridad:** el alcance de datos de cada Director es su Dirección. El servidor filtra por la Dirección del Director en sesión. No se filtra en el cliente, y un Director no puede consultar a personas de otra Dirección aunque conozca su nombre o su cédula.
+
+**Matriz RBAC objetivo (reemplaza la del §4):**
+
+| Rol | Acceso |
+|---|---|
+| `admin` | Total: configuración, enlaces, correos, resultados de toda la empresa. |
+| `director` | Solo su Dirección. Hace su autoevaluación y la evaluación de sus subordinados dentro de su sesión, y ve los resultados de su Dirección en solo lectura. |
+| Evaluador vía enlace | Solo su instrumento, una vez. |
+
+**Efecto sobre decisiones anteriores:**
+- **AMB-09:** queda modificada. Ya no inicia sesión solo el Administrador: también los Directores.
+- **AMB-11:** se mantiene. El colaborador no ve sus resultados; solo los ven Talento Humano y su Director.
+
+### Preguntas derivadas de D-02 (pendientes)
+
+| ID | Pregunta | Recomendación |
+|---|---|---|
+| D-02a | ¿Quién es "subordinado" de un Director: solo sus reportes directos (Gerentes/Coordinadores) o toda la Dirección? | Solo sus reportes directos, según el organigrama (RN-06). Los niveles inferiores los evalúa su jefe inmediato. |
+| D-02b | La autoevaluación y la evaluación a subordinados del Director, ¿se hacen dentro de su sesión, se envían también por enlace, o funcionan de las dos formas? | Dentro de la sesión, sin enlace. Aplica la misma regla de un solo envío y bloqueo (RN-12). |
+| D-02c | ¿Quién evalúa al Director? El alcance da a los Directores modalidad 360° (con supervisor, pares y subordinados), pero la Dirección General no existe en el organigrama (AMB-18). | Supervisor = Presidencia/Junta, por enlace. Pares = los otros 7 Directores. |
+| D-02d | ¿El Director ve la nota de un colaborador abierta por fuente (cuánto le dio cada par o subordinado)? | No. Solo la nota consolidada y los bloques, para proteger el anonimato de los evaluadores. |
+| D-02e | ¿El Director de Talento Humano ve también los resultados de toda la empresa, o solo los de su Dirección? | Solo su Dirección. La vista global queda para el Administrador. |
+| D-02f | ¿Cómo entra el Director (usuario y contraseña inicial)? La cédula no sirve como contraseña inicial, porque es un dato conocido. | El Administrador crea la cuenta. El sistema envía al Director un enlace de activación de un solo uso para que defina su contraseña. |
+
+---
+
+## 6. Restricción de conservación (2026-11-13, Natalia Rodríguez) — responde D-10
+
+Esta regla obliga a todas las olas de remediación:
+
+1. **Instrumentos intactos.** No se modifica la redacción de ningún reactivo, caso situacional, opción de respuesta ni KPI por Dirección. Los cambios a los instrumentos son técnicos: guardado, tokens y validación. Una excepción solo vale si la usuaria la aprueba explícitamente; incluye W4-7 (textos por rol evaluador), que queda en propuesta.
+2. **Visualizaciones conservadas.** Las campanas de Gauss, la Matriz 9-Box y los dashboards se mantienen tal como están. Las correcciones de cálculo de la Ola 3 cambian los números que reciben, pero no su diseño.
+3. **Menú del Administrador**: estos módulos se mantienen visibles. D-10 queda resuelta: se conservan.
+   - 1. INICIO
+     - Dashboard Desarrollo y Desempeño
+       - Promedio por Cargo (8 niveles)
+       - Detalle Operativo y Mapa de Calor
+       - Impacto Nivel Académico
+   - 2. PERFIL DEL COLABORADOR
+     - Resultados de Evaluación de Desempeño
+       - Desempeño y Competencias
+       - Potencial y Liderazgo
+       - Matriz 9-Box
+       - Campana de Gauss y Distribución
+     - Resultados de Promoción
+       - Análisis de Brechas
+       - Matriz 9-Box
+       - Predisposición Conductual y Adecuación al nuevo Cargo
+       - Vista Previa e Impresión PDF
+     - Plan de Desarrollo Individual (PDI) 70-20-10
+   - MATRIZ DE SUCESIÓN
+   - AUDITORÍA EN VIVO
+   - CONFIG. DESEMPEÑO (por Dirección y 360°)
+   - CONCURSO PROMOCIÓN (Subprocesos 1 y 2, IA)
+   - RECUPERACIÓN CLAVE (Maestro)
+
+**Efecto en el plan:**
+- W5-3 deja de retirar módulos: solo se limpian componentes sin uso.
+- W4-6 sigue retirando los datos de demostración, pero no los tableros: un tablero sin datos muestra "Sin datos".
+
+---
+
+## 7. Respuestas D-02a–f (2026-11-13, Natalia Rodríguez)
+
+| ID | Decisión |
+|---|---|
+| D-02a | El Director evalúa **solo a sus reportes directos**, según el organigrama. A los niveles inferiores los evalúa su jefe inmediato, por enlace. |
+| D-02b | El Director hace su autoevaluación y la evaluación de sus subordinados **dentro de su sesión**, con un único envío y bloqueo (RN-12). |
+| D-02c | El 360° del Director: **Supervisor = Presidencia/Junta** (por enlace) · **Pares = los otros 7 Directores** · Subordinados = sus reportes directos · Autoevaluación desde su sesión. |
+| D-02d | En "Resultados de la Dirección", el Director ve nota final, B1, B2, tramo, campana y 9-Box, **sin el desglose por fuente**, para proteger el anonimato. |
+| D-02e | **El Director de Talento Humano ve toda la empresa**, en solo lectura y sin configuración ni envío de enlaces. Los demás Directores ven solo su Dirección. |
+| D-02f | La cuenta del Director la activa un enlace de un solo uso que genera el Administrador. Es la recomendación, ya incorporada en W1-1. |
