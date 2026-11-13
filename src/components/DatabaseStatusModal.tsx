@@ -465,22 +465,42 @@ export function DatabaseStatusModal({ isOpen, onClose }: DatabaseStatusModalProp
 
           {/* Database Connection Pill */}
           <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold ${
-              dbStatus?.connected 
-                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
-                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-            }`}>
-              <Database size={12} className={dbStatus?.connected ? 'text-emerald-500' : 'text-zinc-400'} />
-              <span>{dbStatus?.connected ? 'PostgreSQL Conectado' : 'Almacenamiento Local Activo'}</span>
+            <div 
+              title={dbStatus?.message || (dbStatus?.connected ? 'Base de datos en la nube conectada' : 'Modo contingencia en memoria / LocalStorage')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold ${
+                dbStatus?.connected 
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30'
+              }`}
+            >
+              <Database size={12} className={dbStatus?.connected ? 'text-emerald-500' : 'text-amber-500'} />
+              <span>
+                {dbStatus?.connected 
+                  ? (dbStatus.provider === 'supabase' ? 'Supabase Conectado' : 'PostgreSQL Conectado') 
+                  : 'Almacenamiento Local Activo'}
+              </span>
             </div>
+            <button
+              onClick={async () => {
+                setSyncingDb(true);
+                const st = await checkDatabaseStatus();
+                setDbStatus(st);
+                setSyncingDb(false);
+              }}
+              disabled={syncingDb}
+              className="text-[11px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              title="Re-verificar conexión a base de datos"
+            >
+              <RefreshCw size={11} className={syncingDb ? 'animate-spin' : ''} />
+              <span>{syncingDb ? 'Comprobando...' : 'Verificar'}</span>
+            </button>
             {dbStatus?.connected && (
               <button
                 onClick={handleManualSyncPostgres}
                 disabled={syncingDb}
                 className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
               >
-                <RefreshCw size={11} className={syncingDb ? 'animate-spin' : ''} />
-                Sincronizar
+                Sincronizar Censo
               </button>
             )}
           </div>
@@ -503,6 +523,20 @@ export function DatabaseStatusModal({ isOpen, onClose }: DatabaseStatusModalProp
               )}
               <div className="text-xs font-medium leading-relaxed">
                 {statusMsg.message}
+              </div>
+            </div>
+          )}
+
+          {/* Informative notice about Local Storage vs Supabase */}
+          {!dbStatus?.connected && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
+              <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-bold block">Modo de Alta Disponibilidad Activo (Almacenamiento Local)</span>
+                <p className="text-[11px] text-amber-700 dark:text-amber-300/90 leading-relaxed">
+                  {dbStatus?.message || 'El sistema está operando con persistencia local en el navegador.'}
+                  {' '}Cualquier archivo Excel que cargues se vinculará de inmediato en tu navegador. Para sincronización directa en Supabase, verifica que las variables <code>DATABASE_URL</code> o <code>SUPABASE_URL</code> + <code>SUPABASE_ANON_KEY</code> estén activas en tu entorno y haz clic en <strong>Verificar</strong>.
+                </p>
               </div>
             </div>
           )}

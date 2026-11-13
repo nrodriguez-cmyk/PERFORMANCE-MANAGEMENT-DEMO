@@ -2,25 +2,44 @@ import { Pool } from 'pg';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Environment variable resolution
-const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getDatabaseUrl(): string | undefined {
+  return process.env.DATABASE_URL || 
+         process.env.POSTGRES_URL || 
+         process.env.POSTGRES_PRISMA_URL || 
+         process.env.SUPABASE_DB_URL || 
+         process.env.POSTGRES_URL_NON_POOLING;
+}
+
+function getSupabaseUrl(): string | undefined {
+  return process.env.SUPABASE_URL || 
+         process.env.VITE_SUPABASE_URL || 
+         process.env.NEXT_PUBLIC_SUPABASE_URL;
+}
+
+function getSupabaseKey(): string | undefined {
+  return process.env.SUPABASE_ANON_KEY || 
+         process.env.SUPABASE_SERVICE_ROLE_KEY || 
+         process.env.SUPABASE_KEY || 
+         process.env.VITE_SUPABASE_ANON_KEY || 
+         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+}
 
 let pool: Pool | null = null;
 let supabase: SupabaseClient | null = null;
 
 export function isDbConfigured(): boolean {
-  return !!(databaseUrl || (supabaseUrl && supabaseKey));
+  return !!(getDatabaseUrl() || (getSupabaseUrl() && getSupabaseKey()));
 }
 
 export function getDbPool(): Pool | null {
   if (pool) return pool;
 
-  if (databaseUrl) {
+  const dbUrl = getDatabaseUrl();
+  if (dbUrl) {
     try {
       pool = new Pool({
-        connectionString: databaseUrl,
-        ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false },
+        connectionString: dbUrl,
+        ssl: dbUrl.includes('localhost') ? false : { rejectUnauthorized: false },
         max: 10,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
@@ -43,9 +62,11 @@ export function getDbPool(): Pool | null {
 
 export function getSupabaseClient(): SupabaseClient | null {
   if (supabase) return supabase;
-  if (supabaseUrl && supabaseKey) {
+  const sUrl = getSupabaseUrl();
+  const sKey = getSupabaseKey();
+  if (sUrl && sKey) {
     try {
-      supabase = createClient(supabaseUrl, supabaseKey);
+      supabase = createClient(sUrl, sKey);
       console.log('[Supabase] Cliente JS inicializado con éxito.');
       return supabase;
     } catch (err: any) {
@@ -95,13 +116,8 @@ export async function testConnection(): Promise<{
           message: 'Tablas inicializadas automáticamente con éxito en PostgreSQL.'
         };
       }
-      return {
-        connected: false,
-        provider: 'postgresql',
-        totalCollaborators: 0,
-        totalEvaluations: 0,
-        message: `Error al conectar a PostgreSQL: ${err.message}`
-      };
+      console.warn('[PostgreSQL] Conexión de pool falló:', err.message, '- Intentando cliente Supabase...');
+      pool = null;
     }
   }
 

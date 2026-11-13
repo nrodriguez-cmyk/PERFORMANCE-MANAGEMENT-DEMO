@@ -5,15 +5,25 @@ let pool: Pool | null = null;
 let supabase: SupabaseClient | null = null;
 
 function getDatabaseUrl(): string | undefined {
-  return process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
+  return process.env.DATABASE_URL || 
+         process.env.POSTGRES_URL || 
+         process.env.POSTGRES_PRISMA_URL || 
+         process.env.SUPABASE_DB_URL || 
+         process.env.POSTGRES_URL_NON_POOLING;
 }
 
 function getSupabaseUrl(): string | undefined {
-  return process.env.SUPABASE_URL;
+  return process.env.SUPABASE_URL || 
+         process.env.VITE_SUPABASE_URL || 
+         process.env.NEXT_PUBLIC_SUPABASE_URL;
 }
 
 function getSupabaseKey(): string | undefined {
-  return process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return process.env.SUPABASE_ANON_KEY || 
+         process.env.SUPABASE_SERVICE_ROLE_KEY || 
+         process.env.SUPABASE_KEY || 
+         process.env.VITE_SUPABASE_ANON_KEY || 
+         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 }
 
 export function isDbConfigured(): boolean {
@@ -107,13 +117,8 @@ export async function testConnection(): Promise<{
           message: 'Tablas inicializadas automáticamente con éxito en PostgreSQL.'
         };
       }
-      return {
-        connected: false,
-        provider: 'postgresql',
-        totalCollaborators: 0,
-        totalEvaluations: 0,
-        message: `Error al conectar a PostgreSQL: ${err.message}`
-      };
+      console.warn('[PostgreSQL] Conexión de pool falló:', err.message, '- Intentando cliente Supabase...');
+      pool = null;
     }
   }
 
