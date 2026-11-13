@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 interface PeopleAnalyticsEducationDashboardProps {
-  liveState?: AppState;
+  liveState?: Partial<AppState>;
   onSelectCollaborator?: (collabId: string) => void;
 }
 

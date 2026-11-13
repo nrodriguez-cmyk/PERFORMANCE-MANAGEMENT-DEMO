@@ -70,9 +70,10 @@ export function TransporteLogisticaSection1Form({
     onChange({
       ...data,
       comments: {
-        ...data.comments,
+        // NOTA: EvaluationData.comments esta tipado como string pero aqui se usa como mapa campo->texto (posible bug de logica); cast para conservar el comportamiento.
+        ...(data.comments as unknown as Record<string, string>),
         [field]: text
-      }
+      } as unknown as string
     });
   };
 
