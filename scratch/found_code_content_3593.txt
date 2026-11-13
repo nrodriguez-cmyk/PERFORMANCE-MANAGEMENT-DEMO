@@ -1,0 +1,24 @@
+const fs = require('fs');
+const readline = require('readline');
+
+async function extractUserCsv() {
+  const fileStream = fs.createReadStream('C:/Users/nrodriguez/.gemini/antigravity/brain/ff782a95-aff8-41fb-b67d-d4cf74e3966e/.system_generated/logs/transcript.jsonl');
+  const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+  for await (const line of rl) {
+    if (line.includes('18349161,ERLYS MILEIDY FINOL MEDINA')) {
+      const startIdx = line.indexOf('Empleado/N');
+      const endIdx = line.indexOf('18349161,ERLYS MILEIDY FINOL MEDINA');
+      if (startIdx !== -1 && endIdx !== -1) {
+        const lineEnd = line.indexOf('\\n', endIdx);
+        const rawCsv = line.substring(startIdx, lineEnd !== -1 ? lineEnd : endIdx + 200);
+        const unescaped = rawCsv.replace(/\\r/g, '').replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        fs.writeFileSync('src/data/rawEmployeesCsv.ts', 'export const RAW_EMPLOYEES_CSV = `' + unescaped + '`;\n', 'utf8');
+        console.log('Successfully written rawEmployeesCsv.ts, lines:', unescaped.split('\n').length);
+        return;
+      }
+    }
+  }
+  console.log('Target line not found');
+}
+extractUserCsv();

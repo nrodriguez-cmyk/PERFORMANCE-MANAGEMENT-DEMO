@@ -1,0 +1,31 @@
+const fs = require('fs');
+const readline = require('readline');
+
+async function extractUserCsv() {
+  const fileStream = fs.createReadStream('C:/Users/nrodriguez/.gemini/antigravity/brain/ff782a95-aff8-41fb-b67d-d4cf74e3966e/.system_generated/logs/transcript.jsonl');
+  const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+  for await (const line of rl) {
+    if (!line.includes('ERLYS MILEIDY FINOL MEDINA')) continue;
+    try {
+      const parsed = JSON.parse(line);
+      let text = parsed.content || (parsed.tool_calls && JSON.stringify(parsed.tool_calls)) || '';
+      // Unescape if it was JSON stringified
+      text = text.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\"/g, '"');
+      if (text.includes('Alexis Martin Vasquez Reyes') && text.includes('ERLYS MILEIDY FINOL MEDINA')) {
+        const start = text.indexOf('Empleado/Número');
+        const end = text.indexOf('18349161,ERLYS MILEIDY FINOL MEDINA');
+        if (start !== -1 && end !== -1) {
+          const rest = text.slice(end);
+          const endLine = rest.indexOf('\n');
+          const fullCsv = text.slice(start, endLine !== -1 ? end + endLine : end + 100).trim();
+          fs.writeFileSync('src/data/rawEmployeesCsv.ts', 'export const RAW_EMPLOYEES_CSV = `' + fullCsv.replace(/`/g, '\\`') + '`;\n', 'utf8');
+          console.log('Extracted lines:', fullCsv.split('\n').length);
+          return;
+        }
+      }
+    } catch (e) {}
+  }
+  console.log('Done searching');
+}
+extractUserCsv();

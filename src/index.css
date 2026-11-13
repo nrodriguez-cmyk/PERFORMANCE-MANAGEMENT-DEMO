@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-kangaroo: #F1B400;
+  --color-kangaroo-light: #FFD54F;
+  --color-kangaroo-dark: #CFA000;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+/* Base custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #111;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #F1B400;
+}
+
+/* Print optimizations for Corporate PDF Reports */
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 10mm 12mm 12mm 12mm;
+  }
+
+  html, body {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print,
+  .gestor-view,
+  header,
+  aside,
+  nav {
+    display: none !important;
+  }
+
+  /* Sheet pagination */
+  .pdf-sheet {
+    page-break-before: always !important;
+    break-before: page !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 0 10mm 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #FFFFFF !important;
+  }
+
+  .pdf-sheet:first-child {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
+
+  .pdf-sheet:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  #report-content {
+    border: none !important;
+  }
+}
