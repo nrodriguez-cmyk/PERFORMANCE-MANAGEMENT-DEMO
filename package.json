@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "tsc --noEmit && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=build/server.cjs && esbuild src/server/apiApp.ts --bundle --platform=node --format=esm --target=node18 --outfile=api/index.js --packages=external && esbuild src/server/apiApp.ts --bundle --platform=node --format=esm --target=node18 --outfile=\"api/[...all].js\" --packages=external",
+    "build": "tsc --noEmit && vite build && node build-server.js",
     "start": "node build/server.cjs",
     "preview": "vite preview",
     "clean": "node -e \"for (const p of ['dist','build']) require('fs').rmSync(p,{recursive:true,force:true})\"",
