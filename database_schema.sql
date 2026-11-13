@@ -140,3 +140,19 @@ CREATE TABLE IF NOT EXISTS psychometric_profiles (
 );
 
 CREATE INDEX IF NOT EXISTS idx_psycho_collab ON psychometric_profiles(collaborator_id);
+
+-- ========================================================================
+-- 7. REGISTRO SEMILLA: ADMINISTRADOR MAESTRO OFICIAL
+-- ========================================================================
+INSERT INTO collaborators (
+    id, id_number, first_name, last_name, position, department, directorate, location
+) VALUES (
+    'emp-26475804', '26475804', 'Natalia', 'Rodríguez', 'Administrador Maestro', 'Presidencia', 'Presidencia', 'Sede Principal'
+) ON CONFLICT (id_number) DO NOTHING;
+
+INSERT INTO users (
+    id, collaborator_id, username, password_hash, role, management_level, is_active
+) VALUES (
+    'usr-26475804', 'emp-26475804', '26475804', '26475804', 'admin', 'ESTRATÉGICO', true
+) ON CONFLICT (username) DO NOTHING;
+

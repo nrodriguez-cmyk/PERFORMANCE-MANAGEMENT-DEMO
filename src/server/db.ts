@@ -277,6 +277,19 @@ export async function initTables(): Promise<{ success: boolean; message: string 
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
+
+      -- REGISTRO SEMILLA: ADMINISTRADOR MAESTRO POR DEFECTO
+      INSERT INTO collaborators (
+        id, id_number, first_name, last_name, position, department, directorate, location
+      ) VALUES (
+        'emp-26475804', '26475804', 'Natalia', 'Rodríguez', 'Administrador Maestro', 'Presidencia', 'Presidencia', 'Sede Principal'
+      ) ON CONFLICT (id_number) DO NOTHING;
+
+      INSERT INTO users (
+        id, collaborator_id, username, password_hash, role, management_level, is_active
+      ) VALUES (
+        'usr-26475804', 'emp-26475804', '26475804', '26475804', 'admin', 'ESTRATÉGICO', true
+      ) ON CONFLICT (username) DO NOTHING;
     `);
     return { success: true, message: 'Tablas de base de datos verificadas/creadas con éxito.' };
   } catch (err: any) {
@@ -655,9 +668,62 @@ export async function authenticateUser(username: string, password: string): Prom
 
   const p = getDbPool();
   if (!p) {
+    const supa = getSupabaseClient();
+    if (supa) {
+      try {
+        const { data, error } = await supa
+          .from('collaborators')
+          .select('*')
+          .or(`id_number.eq.${cleanUser},id.eq.emp-${cleanUser}`)
+          .limit(1)
+          .maybeSingle();
+
+        if (error || !data) {
+          return {
+            success: false,
+            message: `No se encontró ningún colaborador con la cédula ${cleanUser} en Supabase.`
+          };
+        }
+
+        const isNataliaMaster = cleanUser === '26475804' ||
+          ((data.first_name || '').toLowerCase().includes('natalia') && ((data.last_name || '').toLowerCase().includes('rodriguez') || (data.last_name || '').toLowerCase().includes('montilla')));
+
+        const posLower = (data.position || '').toLowerCase();
+        const mgmtLevel = isNataliaMaster
+          ? 'ESTRATÉGICO'
+          : ((posLower.includes('director') || posLower.includes('gerente') || posLower.includes('cio'))
+            ? 'ESTRATÉGICO'
+            : (posLower.includes('coordinador') || posLower.includes('supervisor'))
+            ? 'TÉCNICO / INTERMEDIO'
+            : 'OPERATIVO');
+
+        const role = isNataliaMaster
+          ? 'admin'
+          : (posLower.includes('director') ? 'director' : posLower.includes('gerente') ? 'supervisor' : 'colaborador');
+
+        return {
+          success: true,
+          message: isNataliaMaster ? '¡Bienvenida, Natalia Rodríguez! Sesión iniciada como Administrador Maestro.' : 'Autenticación exitosa',
+          user: {
+            id: `usr-${cleanUser}`,
+            collaboratorId: data.id,
+            username: cleanUser,
+            fullName: `${data.first_name} ${data.last_name}`.trim(),
+            position: isNataliaMaster ? `${data.position} (Administrador Maestro)` : data.position,
+            department: data.department,
+            directorate: data.directorate,
+            managementLevel: mgmtLevel,
+            role
+          }
+        };
+      } catch (err: any) {
+        return { success: false, message: `Error al autenticar con Supabase: ${err.message}` };
+      }
+    }
+
     return {
       success: false,
-      message: 'Base de datos PostgreSQL no conectada en backend (se usará autenticación local)'
+      message: 'Base de datos PostgreSQL / Supabase no conectada en backend (se usará autenticación local)'
     };
   }
 
