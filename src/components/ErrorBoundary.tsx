@@ -11,6 +11,10 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+  // Declaracion de tipo solamente (sin emision): @types/react no esta instalado en el proyecto,
+  // por lo que Component se resuelve como any y TS no conoce this.props.
+  declare public props: Readonly<Props>;
+
   public state: State = {
     hasError: false,
     error: null

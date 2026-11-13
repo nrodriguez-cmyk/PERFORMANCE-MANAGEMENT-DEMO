@@ -16,7 +16,7 @@ import { TransporteLogisticaSection1Form } from '../components/TransporteLogisti
 import { CanguroLogo } from '../components/CanguroLogo';
 import { loadState, saveState, subscribeToStorage } from '../store';
 import { AppState, EvaluationData, AdminNotification } from '../types';
-import { Save, CheckCircle, ShieldCheck, Lock, AlertCircle, ArrowLeft, UserCircle, Sparkles, Award, TrendingUp, Sun, Moon, Brain, Compass, Target, MessageSquare, Clock } from 'lucide-react';
+import { Save, CheckCircle, ShieldCheck, Lock, AlertCircle, ArrowLeft, UserCircle, Sparkles, Award, TrendingUp, Sun, Moon, Brain, Compass, Target, MessageSquare, Clock, Briefcase } from 'lucide-react';
 
 import { CANGURO_COLLABORATORS, savePilotEvaluation } from '../data/canguroUniverso';
 import {

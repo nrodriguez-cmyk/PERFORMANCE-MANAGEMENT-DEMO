@@ -70,9 +70,10 @@ export function ComercialSection1Form({
     onChange({
       ...data,
       comments: {
-        ...data.comments,
+        // NOTA: EvaluationData.comments esta tipado como string pero aqui se usa como mapa campo->texto (posible bug de logica); cast para conservar el comportamiento.
+        ...(data.comments as unknown as Record<string, string>),
         [field]: text
-      }
+      } as unknown as string
     });
   };
 
@@ -545,6 +546,9 @@ export function ComercialSection1Form({
 
   const rawSection1Score = totalWeight > 0 ? (weightedSum / totalWeight) : 0;
   const weightedContribution = rawSection1Score * 0.60;
+
+  const totalQuestions = sub1Items.length + sub2Items.length + sub3Items.length;
+  const answeredQuestions = sub1Scores.length + sub2Scores.length + sub3Scores.length;
 
   const levelBadge = {
     alto: { text: 'NIVEL 3: ESTRATÉGICO / ALTO', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },

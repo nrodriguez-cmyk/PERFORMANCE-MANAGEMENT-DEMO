@@ -27,7 +27,7 @@ interface OrganizationalDashboardProps {
   initialMode?: 'executive_integrated' | 'operational_sections';
   initialSection?: OrgDashboardSectionKey | 'kpis' | 'charts' | 'heatmap';
   onModeChange?: (mode: 'executive_integrated' | 'operational_sections') => void;
-  onSectionChange?: (section: OrgDashboardSectionKey) => void;
+  onSectionChange?: (section: OrgDashboardSectionKey | 'kpis' | 'charts' | 'heatmap') => void;
 }
 
 // 8 Direcciones corporativas oficiales de Districueros El Canguro, C.A. (DTH-GFD-MC-01)

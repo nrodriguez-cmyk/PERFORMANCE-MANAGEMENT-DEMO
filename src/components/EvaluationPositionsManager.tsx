@@ -49,7 +49,7 @@ export function EvaluationPositionsManager() {
     const counts: Record<string, number> = {};
     OFFICIAL_POSITION_FAMILIES.forEach(f => { counts[f.id] = 0; });
 
-    Object.entries(uniquePositionsMap).forEach(([pos, data]) => {
+    Object.entries<{ count: number; familyId: string }>(uniquePositionsMap).forEach(([pos, data]) => {
       counts[data.familyId] = (counts[data.familyId] || 0) + data.count;
     });
     return counts;
@@ -117,7 +117,7 @@ export function EvaluationPositionsManager() {
 
   // Lista filtrada de cargos individuales
   const filteredPositionsList = useMemo(() => {
-    const entries = Object.entries(uniquePositionsMap);
+    const entries = Object.entries<{ count: number; familyId: string }>(uniquePositionsMap);
     return entries.filter(([name, data]) => {
       const matchSearch = searchQuery === '' || name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchFamily = selectedFamilyFilter === 'all' || data.familyId === selectedFamilyFilter;

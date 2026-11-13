@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AppState, PdiGoal, PdiBreach } from '../types';
 import { DEFAULT_PDI_BREACHES } from '../data/canguroUniverso';
 import { PDIProgressChart } from './PDIProgressChart';
-import { calculatePotentialLeadershipScores, NINE_BOX_QUADRANT_PDI_ACTIONS } from '../data/potentialLeadershipQuestions';
+import { calculatePotentialLeadershipScores, NINE_BOX_QUADRANT_PDI_ACTIONS, PotentialLeadershipResults, DimensionResult } from '../data/potentialLeadershipQuestions';
 import {
   resolveEmployeeCompetencyProfile,
   resolvePromotionCompetencyProfile,
@@ -111,11 +111,20 @@ export function PDI({ state, onUpdateGoals, onUpdateBreaches }: PDIProps) {
     ...(state.subordinateEval?.scores || {}),
     ...(state.promotionEval?.scores || {})
   };
-  const potResults = calculatePotentialLeadershipScores(potentialScores);
+  // NOTA: hasPriorityBreaches / isHighPotential / priorityBreaches no existen en
+  // PotentialLeadershipResults (siempre undefined en tiempo de ejecucion). Se tipan como
+  // opcionales para conservar el comportamiento actual; pendiente de revision de logica.
+  const potResults: PotentialLeadershipResults & {
+    hasPriorityBreaches?: boolean;
+    isHighPotential?: boolean;
+    priorityBreaches?: Array<Partial<DimensionResult> & { score?: number }>;
+  } = calculatePotentialLeadershipScores(potentialScores);
   const effectivePotScore = potResults.answeredCount > 0 ? potResults.yScore : (metrics.isEvaluated ? metrics.block2Score : 3.5);
   const nineBoxPos = mapToNineBox(metrics.block1Score || 3.5, effectivePotScore);
   const quadrantKey = `${nineBoxPos.yLevel}-${nineBoxPos.xLevel}`;
-  const quadrantPdi = NINE_BOX_QUADRANT_PDI_ACTIONS[quadrantKey] || {
+  // NOTA: NINE_BOX_QUADRANT_PDI_ACTIONS usa title/actions, no quadrantTitle/recommendedActions
+  // (solo el fallback los define). Se tipa como opcional para conservar el comportamiento actual.
+  const quadrantPdi: { quadrantTitle?: string; recommendedActions?: string[]; [k: string]: unknown } = NINE_BOX_QUADRANT_PDI_ACTIONS[quadrantKey] || {
     quadrantTitle: nineBoxPos.cell.title,
     recommendedActions: [nineBoxPos.cell.action]
   };

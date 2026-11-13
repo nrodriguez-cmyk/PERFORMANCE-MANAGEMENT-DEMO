@@ -189,6 +189,8 @@ export function PilotEvaluationModal({
         if (foundGoal) label = foundGoal.title;
         else if (foundComp) label = `${foundComp.name} (${foundComp.clusterLabel})`;
 
+        // NOTA: los campos targetLevel/currentLevel/gapScore/priority/suggestedAction no pertenecen a PdiBreach
+        // (que exige skills/identifiedGap/estimatedTime); se conservan en el objeto persistido sin cambios de comportamiento.
         generatedBreaches.push({
           id: `breach-${key}`,
           competency: label,
@@ -197,7 +199,7 @@ export function PilotEvaluationModal({
           gapScore: Number((3.75 - val).toFixed(2)),
           priority: val < 2.5 ? 'Alta' : 'Media',
           suggestedAction: `Reforzar la competencia mediante tutoría semanal, práctica en el puesto (70%) y formación corporativa (10%).`
-        });
+        } as unknown as PdiBreach);
       }
     });
 

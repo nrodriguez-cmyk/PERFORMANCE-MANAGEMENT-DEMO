@@ -20,11 +20,12 @@ export type Question = {
   competency: Competency;
   text: string;
   situation?: string;
-  category?: 'cardinal' | 'leadership' | 'area_specific' | 'functional_goals';
+  category?: 'cardinal' | 'leadership' | 'area_specific' | 'functional_goals' | 'board' | 'supervision' | 'area_sales' | 'area_control';
   levels?: LevelDefinition[];
   options?: QuestionOption[];
   weight?: number; // percentage weight, e.g. for goals vs competencies
-  focusArea?: 'CONOCIMIENTO TÉCNICO' | 'FUNCIONES CLAVE';
+  // 'CONOCIMIENTO TÉCNICO' | 'FUNCIONES CLAVE' en descriptores; el diccionario Canguro usa clusterLabel (string libre)
+  focusArea?: 'CONOCIMIENTO TÉCNICO' | 'FUNCIONES CLAVE' | (string & {});
   sourceSection?: string;
 };
 
@@ -323,6 +324,7 @@ export interface PromotionDossier {
     finalScore: number; // 1 to 5
     scoreBase100?: number; // 0 to 100 pts
     fitLevel?: 'Listo Ahora' | 'Listo a Mediano Plazo' | 'No Elegible';
+    resolutionVerdict?: string;
     fitIndexPercent?: number;
     promotionCriterion?: 'NIVEL SOBRESALIENTE' | 'NIVEL COMPETENTE / APTO' | 'NIVEL EN DESARROLLO' | 'NIVEL INSUFICIENTE';
     verdict: 'Altamente Idóneo / Prioritario' | 'Elegible / Apto' | 'En Desarrollo / Requiere Maduración' | 'APROBADO' | 'APROBADO CONDICIONADO' | 'NO APROBADO';

@@ -3171,7 +3171,11 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
 
                       {/* Pool of High Talent (>= 4.5 pts) */}
                       {(() => {
-                        const eligibleTalentPool = CANGURO_COLLABORATORS.filter(c => (c.scores?.performance || 0) >= 4.5 || (c.scores?.potential || 0) >= 4.0);
+                        const eligibleTalentPool = CANGURO_COLLABORATORS.filter(c => {
+                          // NOTA: CanguroCollaborator no define `scores`; siempre undefined en ejecucion (pool vacio). Se conserva el comportamiento.
+                          const s = (c as typeof c & { scores?: { performance?: number; potential?: number } }).scores;
+                          return (s?.performance || 0) >= 4.5 || (s?.potential || 0) >= 4.0;
+                        });
                         return (
                           <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center justify-between pb-3 border-b border-zinc-200 mb-4">
