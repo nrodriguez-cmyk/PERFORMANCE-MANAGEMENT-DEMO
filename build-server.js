@@ -12,33 +12,29 @@ esbuild.buildSync({
 });
 
 // 2. Build Serverless Functions exactas para Vercel
-const serverlessEndpoints = [
-  'api/index.js',
-  'api/ping.js',
-  'api/db/status.js',
-  'api/db/init.js',
-  'api/db/sync-census.js',
-  'api/db/sync-positions.js',
-  'api/db/evaluations/index.js',
-  'api/db/evaluations/[collaboratorId].js',
-  'api/db/pdi/index.js',
-  'api/db/pdi/[collaboratorId].js',
-  'api/auth/login.js',
-  'api/send-email.js',
-  'api/generate-situational.js',
-  'api/evaluate-promotion.js',
-  'api/[...all].js'
+const mappings = [
+  { entry: 'src/server/handlers/status.ts', out: 'api/db/status.js' },
+  { entry: 'src/server/handlers/init.ts', out: 'api/db/init.js' },
+  { entry: 'src/server/handlers/syncCensus.ts', out: 'api/db/sync-census.js' },
+  { entry: 'src/server/handlers/syncPositions.ts', out: 'api/db/sync-positions.js' },
+  { entry: 'src/server/handlers/evaluations.ts', out: 'api/db/evaluations/index.js' },
+  { entry: 'src/server/handlers/evaluations.ts', out: 'api/db/evaluations/[collaboratorId].js' },
+  { entry: 'src/server/handlers/pdi.ts', out: 'api/db/pdi/index.js' },
+  { entry: 'src/server/handlers/pdi.ts', out: 'api/db/pdi/[collaboratorId].js' },
+  { entry: 'src/server/handlers/login.ts', out: 'api/auth/login.js' },
+  { entry: 'src/server/handlers/ping.ts', out: 'api/ping.js' },
+  { entry: 'src/server/apiApp.ts', out: 'api/index.js' }
 ];
 
-for (const outfile of serverlessEndpoints) {
+for (const m of mappings) {
   esbuild.buildSync({
-    entryPoints: ['src/server/apiApp.ts'],
+    entryPoints: [m.entry],
     bundle: true,
     platform: 'node',
     format: 'esm',
     target: 'node18',
     packages: 'external',
-    outfile
+    outfile: m.out
   });
 }
 
