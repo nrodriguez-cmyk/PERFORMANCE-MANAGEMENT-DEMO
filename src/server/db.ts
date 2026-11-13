@@ -133,12 +133,13 @@ export async function testConnection(): Promise<{
         .select('*', { count: 'exact', head: true });
 
       if (collabErr) {
+        const errorDetail = collabErr.message || collabErr.details || collabErr.hint || collabErr.code || JSON.stringify(collabErr);
         return {
           connected: false,
           provider: 'supabase',
           totalCollaborators: 0,
           totalEvaluations: 0,
-          message: `Supabase API error: ${collabErr.message}`
+          message: `Supabase API error: ${errorDetail}`
         };
       }
 
