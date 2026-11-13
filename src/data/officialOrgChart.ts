@@ -954,13 +954,7 @@ export function resolveOfficialHierarchy(
         }
 
         return {
-          immediateSupervisor: {
-            name: 'Presidencia & Junta Directiva',
-            idNumber: '00000000',
-            position: 'PRESIDENCIA / GOBIERNO CORPORATIVO',
-            department: 'PRESIDENCIA',
-            directorate: 'GOBIERNO CORPORATIVO'
-          },
+          immediateSupervisor: null,
           officialPeers: otherDirectors,
           officialSubordinates: dirSubordinates
         };
@@ -1190,13 +1184,7 @@ export function resolveOfficialHierarchy(
 
       if (posClean.includes('director')) {
         return {
-          immediateSupervisor: {
-            name: 'Presidencia & Junta Directiva',
-            idNumber: '00000000',
-            position: 'PRESIDENCIA / GOBIERNO CORPORATIVO',
-            department: 'PRESIDENCIA',
-            directorate: 'GOBIERNO CORPORATIVO'
-          },
+          immediateSupervisor: null,
           officialPeers: OFFICIAL_ORGANIGRAMAS.filter(d => d.directionName !== orgDir.directionName).map(d => ({
             name: d.director.name,
             idNumber: d.director.idNumber,

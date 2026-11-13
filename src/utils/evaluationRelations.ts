@@ -46,7 +46,14 @@ export function getCollaboratorEvaluationRelations(
   );
 
   if (officialHierarchy) {
-    const immediateSupervisor: EvaluationTargetOption | null = officialHierarchy.immediateSupervisor
+    const isDirectorOrCeo = userPosClean.includes('director') || 
+                            userPosClean.includes('presidencia') || 
+                            userPosClean.includes('junta directiva') || 
+                            userPosClean.includes('ceo') ||
+                            officialHierarchy.immediateSupervisor?.idNumber === '00000000' ||
+                            officialHierarchy.immediateSupervisor?.position?.toLowerCase().includes('presidencia');
+
+    const immediateSupervisor: EvaluationTargetOption | null = (officialHierarchy.immediateSupervisor && !isDirectorOrCeo)
       ? {
           id: officialHierarchy.immediateSupervisor.idNumber,
           name: officialHierarchy.immediateSupervisor.name,

@@ -230,19 +230,20 @@ export function CollaboratorEvaluationQuadrants({
 
           {/* ========================================================================= */}
           {/* CUADRANTE 2: EVALUACIÓN DEL SUPERVISOR INMEDIATO */}
+          {/* (NO APLICA PARA DIRECTORES / REPORTES DIRECTOS A PRESIDENCIA / CEO) */}
           {/* ========================================================================= */}
-          <div className="bg-white rounded-2xl border-2 border-blue-400 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group min-h-[160px]">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <h4 className="text-base sm:text-lg font-black uppercase text-zinc-950 flex items-center gap-2">
-                  <UserCheck size={20} className="text-blue-600" /> Evaluación del Supervisor Inmediato
-                </h4>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold border border-blue-200">
-                  Línea de Mando Oficial
-                </span>
-              </div>
+          {immediateSupervisor && !posLower.includes('director') && (
+            <div className="bg-white rounded-2xl border-2 border-blue-400 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group min-h-[160px]">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <h4 className="text-base sm:text-lg font-black uppercase text-zinc-950 flex items-center gap-2">
+                    <UserCheck size={20} className="text-blue-600" /> Evaluación del Supervisor Inmediato
+                  </h4>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold border border-blue-200">
+                    Línea de Mando Oficial
+                  </span>
+                </div>
 
-              {immediateSupervisor ? (
                 <div className="space-y-2 pt-1">
                   <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl space-y-1">
                     <span className="text-[10px] uppercase font-bold text-blue-900 font-mono block">
@@ -256,24 +257,20 @@ export function CollaboratorEvaluationQuadrants({
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-600 font-mono">
-                  Reporta directamente a Presidencia & Junta Directiva Corporativa.
-                </div>
-              )}
-            </div>
+              </div>
 
-            <div className="pt-4 mt-4 border-t border-zinc-100 flex justify-end">
-              <button
-                onClick={() => handleLaunch('supervisor')}
-                disabled={!evalStatus.isOpen || !immediateSupervisor}
-                className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span>{evalStatus.isOpen ? (immediateSupervisor ? 'Evaluar a Supervisor Inmediato' : 'Sin Supervisor Asignado') : 'Módulo Cerrado'}</span>
-                {evalStatus.isOpen ? <ArrowRight size={14} /> : <Lock size={14} />}
-              </button>
+              <div className="pt-4 mt-4 border-t border-zinc-100 flex justify-end">
+                <button
+                  onClick={() => handleLaunch('supervisor')}
+                  disabled={!evalStatus.isOpen}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{evalStatus.isOpen ? 'Evaluar a Supervisor Inmediato' : 'Módulo Cerrado'}</span>
+                  {evalStatus.isOpen ? <ArrowRight size={14} /> : <Lock size={14} />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ========================================================================= */}
           {/* CUADRANTE 3: EVALUACIÓN DE PARES */}
