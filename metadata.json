@@ -1,6 +1,0 @@
-{
-  "name": "Sistema de Gestión del Desempeño y Talento - Universo Canguro",
-  "description": "Plataforma corporativa de evaluación multifuente 180°/360°, Curva Gaussiana, Guía de Mérito, Nine-Box, PDI 70-20-10, Ascensos con IA (Gemini 3.8 Flash) y Banco de Sucesores para Districueros El Canguro, C.A.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
