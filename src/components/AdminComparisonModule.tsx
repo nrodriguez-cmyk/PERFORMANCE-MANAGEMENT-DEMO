@@ -495,11 +495,11 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
             {isAdmin && (
               <button
                 onClick={() => setShowDbModal(true)}
-                className="px-2.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-[#F1B400]/60 hover:bg-zinc-850 text-zinc-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                title="Base de Datos de Colaboradores (Carga de Plantilla Excel y Vinculación con Organigrama)"
+                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-[#F1B400]/40 hover:border-[#F1B400] hover:bg-zinc-850 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="Carga Masiva de Colaboradores (Plantilla Excel y Sincronización con Supabase)"
               >
                 <FileSpreadsheet size={15} className="text-[#F1B400] shrink-0" />
-                <span className="hidden sm:inline text-[11px] font-mono font-bold">Base de Datos</span>
+                <span className="text-[11px] font-mono font-bold">Carga Masiva Excel</span>
               </button>
             )}
 
@@ -1336,6 +1336,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
               onSelectCollaborator={handleSelectCollaborator}
               collaboratorCount={CANGURO_COLLABORATORS.length}
               currentUser={currentUser}
+              onOpenDatabaseModal={() => setShowDbModal(true)}
             />
           )}
 

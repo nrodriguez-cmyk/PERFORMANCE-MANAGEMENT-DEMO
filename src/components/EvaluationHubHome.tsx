@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Settings, Activity, Users, FileCheck, Star, ChevronRight, GraduationCap, Sparkles, Sliders,
-  User, ShieldCheck, Briefcase, LayoutGrid, Eye, KeyRound
+  User, ShieldCheck, Briefcase, LayoutGrid, Eye, KeyRound, FileSpreadsheet
 } from 'lucide-react';
 import { CANGURO_COLLABORATORS } from '../data/canguroUniverso';
 import { getCurrentSession, AuthenticatedUser, isMasterAdministrator } from '../services/authService';
@@ -13,13 +13,15 @@ interface EvaluationHubHomeProps {
   collaboratorCount?: number;
   currentUser?: AuthenticatedUser | null;
   onOpenEvaluation?: (role: 'self' | 'supervisor' | 'peer' | 'subordinate') => void;
+  onOpenDatabaseModal?: () => void;
 }
 
 export function EvaluationHubHome({
   onNavigate,
   onSelectCollaborator,
   currentUser: propUser,
-  onOpenEvaluation
+  onOpenEvaluation,
+  onOpenDatabaseModal
 }: EvaluationHubHomeProps) {
   const activeUser = propUser || getCurrentSession();
   const isMaster = isMasterAdministrator(activeUser);
@@ -137,6 +139,18 @@ export function EvaluationHubHome({
       previewType: 'config',
       icon: KeyRound,
       buttonText: 'Gestionar Recuperación de Contraseña'
+    },
+    {
+      id: 'carga_masiva_excel',
+      stage: 'config' as const,
+      badge: 'Plantilla Excel',
+      badgeClass: 'bg-emerald-100 text-emerald-950 font-black border border-emerald-300',
+      title: 'Carga Masiva de Colaboradores (Excel)',
+      subtitle: 'Plantilla Oficial .xlsx / .xls & Sincronización',
+      description: 'Importación masiva de la nómina mediante plantilla Excel de 7 columnas. Permite descargar la plantilla, vincular automáticamente organigramas y sincronizar en Supabase.',
+      previewType: 'excel',
+      icon: FileSpreadsheet,
+      buttonText: 'Cargar Archivo Excel'
     }
   ];
 
@@ -328,6 +342,10 @@ export function EvaluationHubHome({
                   <div
                     key={card.id}
                     onClick={() => {
+                      if (card.id === 'carga_masiva_excel') {
+                        if (onOpenDatabaseModal) onOpenDatabaseModal();
+                        return;
+                      }
                       onNavigate(card.stage, card.block);
                     }}
                     className="group cursor-pointer bg-white border border-zinc-200 hover:border-[#F1B400] rounded-2xl shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
@@ -409,6 +427,39 @@ export function EvaluationHubHome({
                             <div className="flex items-center justify-between text-[8px] font-mono text-zinc-400 border-t border-zinc-800/80 pt-1">
                               <span className="text-zinc-300 font-medium">Box Plot + Slicers</span>
                               <span className="text-[#F1B400] font-bold">Import CSV / XLSX</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {card.previewType === 'excel' && (
+                          <div className="w-full h-full flex flex-col justify-center px-4 space-y-1.5 opacity-90 group-hover:scale-105 transition-transform duration-300">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
+                                <FileSpreadsheet size={12} /> Carga Masiva
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-[9px] text-emerald-300 font-mono border border-emerald-800">7 Columnas</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-1 text-center py-1">
+                              <div className="bg-zinc-900 p-1 rounded border border-zinc-800">
+                                <span className="text-[7px] text-zinc-400 font-mono block">CÉDULA</span>
+                                <span className="text-[9px] font-mono font-bold text-zinc-200">ID</span>
+                              </div>
+                              <div className="bg-zinc-900 p-1 rounded border border-zinc-800">
+                                <span className="text-[7px] text-zinc-400 font-mono block">NOMBRE</span>
+                                <span className="text-[9px] font-mono font-bold text-zinc-200">DATOS</span>
+                              </div>
+                              <div className="bg-zinc-900 p-1 rounded border border-zinc-800">
+                                <span className="text-[7px] text-zinc-400 font-mono block">CARGO</span>
+                                <span className="text-[9px] font-mono font-bold text-[#F1B400]">NIVEL</span>
+                              </div>
+                              <div className="bg-zinc-900 p-1 rounded border border-zinc-800">
+                                <span className="text-[7px] text-zinc-400 font-mono block">SUPABASE</span>
+                                <span className="text-[9px] font-mono font-bold text-emerald-400">SYNC</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between text-[8px] font-mono text-zinc-400 border-t border-zinc-800/80 pt-1">
+                              <span className="text-zinc-300 font-medium">Vinculación Auto</span>
+                              <span className="text-[#F1B400] font-bold">.xlsx / .xls</span>
                             </div>
                           </div>
                         )}

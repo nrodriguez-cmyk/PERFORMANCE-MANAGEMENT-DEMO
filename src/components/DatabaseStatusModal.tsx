@@ -4,7 +4,7 @@ import {
   FileSpreadsheet, Upload, Users, CheckCircle2, AlertTriangle, 
   RefreshCw, X, Search, ChevronRight, Check, ShieldCheck, Database, 
   Building2, Briefcase, Eye, ArrowUpDown, Filter, Sparkles, UserCheck,
-  CheckCircle, ArrowRight
+  CheckCircle, ArrowRight, Download
 } from 'lucide-react';
 import { 
   checkDatabaseStatus, 
@@ -106,6 +106,43 @@ export function DatabaseStatusModal({ isOpen, onClose }: DatabaseStatusModalProp
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  // Descargar plantilla Excel oficial de ejemplo
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'NOMBRE DEL COLABORADOR': 'Alexis Martin Vasquez Reyes',
+        'ID (CÉDULA)': '26120411',
+        'CARGO': 'COORDINADOR DE TIENDA',
+        'GERENCIA / DPTO.': 'OPERACIONES',
+        'DIRECCIÓN': 'Dirección de Operaciones y Red de Tiendas',
+        'ESTUDIO': 'TSU en Mercadeo',
+        'FECHA DE INGRESO': '2022-09-01'
+      },
+      {
+        'NOMBRE DEL COLABORADOR': 'Barbara Marina Bravo Portillo',
+        'ID (CÉDULA)': '26546210',
+        'CARGO': 'COORDINADOR (A) DE PLANIFICACION FINANCIERA',
+        'GERENCIA / DPTO.': 'FINANZAS',
+        'DIRECCIÓN': 'Dirección de Administración y Finanzas',
+        'ESTUDIO': 'Licenciatura en Finanzas',
+        'FECHA DE INGRESO': '2024-09-16'
+      },
+      {
+        'NOMBRE DEL COLABORADOR': 'Carlos Eduardo Mendoza',
+        'ID (CÉDULA)': '18500200',
+        'CARGO': 'ASESOR (A) DE VENTAS INTEGRAL',
+        'GERENCIA / DPTO.': 'OPERACIONES',
+        'DIRECCIÓN': 'Dirección de Operaciones y Red de Tiendas',
+        'ESTUDIO': 'Diversificado',
+        'FECHA DE INGRESO': '2023-05-10'
+      }
+    ];
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'PLANTILLA');
+    XLSX.writeFile(wb, 'Plantilla_Carga_Colaboradores_Canguro.xlsx');
+  };
 
   // Process Excel binary buffer
   const handleProcessExcelFile = (file: File) => {
@@ -476,11 +513,22 @@ export function DatabaseStatusModal({ isOpen, onClose }: DatabaseStatusModalProp
               
               {/* Mandatory Column Guide Banner matching User's Image 2 */}
               <div className="p-3.5 rounded-xl bg-amber-500/10 border border-[#F1B400]/40 text-zinc-800 dark:text-zinc-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={16} className="text-[#F1B400]" />
-                  <span className="text-xs font-bold font-mono uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                    Estructura Requerida de la Plantilla Excel (Columnas Oficiales):
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-[#F1B400]" />
+                    <span className="text-xs font-bold font-mono uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                      Estructura Requerida de la Plantilla Excel (Columnas Oficiales):
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="px-3 py-1.5 bg-[#F1B400] hover:bg-[#d99c00] active:scale-[0.98] text-black text-xs font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
+                    title="Descargar plantilla de Excel pre-formateada con las 7 columnas requeridas"
+                  >
+                    <Download size={13} />
+                    <span>Descargar Plantilla Oficial (.xlsx)</span>
+                  </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-[10px] font-mono font-bold">
                   <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2 rounded-lg text-center shadow-2xs">
