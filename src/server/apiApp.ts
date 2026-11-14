@@ -156,12 +156,124 @@ function buildOfficialEvaluationEmailHtml(data: {
   `;
 }
 
-// ROUTER PRINCIPAL DE API (Soporta prefijo /api y ruta raíz)
-const apiRouter = express.Router();
+// =========================================================================
+// RUTAS REGISTRADAS DIRECTAMENTE EN APP CON ALIAS UNIVERSALES
+// =========================================================================
 
-// 1. Envío de Correo
-apiRouter.post('/send-email', async (req, res) => {
-  const { to, subject, body, employeeName, idNumber, position, roleLabel, url } = req.body;
+// Ping de diagnóstico rápido
+app.get(['/api/ping', '/ping'], (_req, res) => {
+  return res.json({
+    pong: true,
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'unknown',
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY
+  });
+});
+
+// Estado de Conexión a Base de Datos
+app.get(['/api/db/status', '/api/status', '/db/status', '/status'], async (_req, res) => {
+  try {
+    const status = await testConnection();
+    return res.json(status);
+  } catch (err: any) {
+    return res.status(500).json({ connected: false, message: err.message });
+  }
+});
+
+// Autenticación de Usuario (Supabase / Postgres)
+app.post(['/api/auth/login', '/api/login', '/auth/login', '/login'], async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Usuario y contraseña requeridos' });
+    }
+    const result = await authenticateUser(username, password);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Inicialización de Tablas
+app.post(['/api/db/init', '/api/init', '/db/init', '/init'], async (_req, res) => {
+  try {
+    const result = await initTables();
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Sincronización Masiva de Colaboradores (Censo / Excel)
+app.post(['/api/db/sync-census', '/api/sync-census', '/db/sync-census', '/sync-census'], async (req, res) => {
+  try {
+    const { collaborators } = req.body || {};
+    if (!Array.isArray(collaborators) || collaborators.length === 0) {
+      return res.status(400).json({ success: false, message: 'Se requiere una lista de colaboradores' });
+    }
+    const result = await syncCollaboratorsBatch(collaborators);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Sincronización de Cargos
+app.post(['/api/db/sync-positions', '/api/sync-positions', '/db/sync-positions', '/sync-positions'], async (req, res) => {
+  try {
+    const { positions } = req.body || {};
+    if (!Array.isArray(positions) || positions.length === 0) {
+      return res.status(400).json({ success: false, message: 'Se requiere una lista de cargos' });
+    }
+    const result = await syncJobPositionsBatch(positions);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Evaluaciones
+app.post(['/api/db/evaluations', '/api/evaluations', '/db/evaluations', '/evaluations'], async (req, res) => {
+  try {
+    const result = await saveEvaluation(req.body);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get(['/api/db/evaluations/:collaboratorId', '/api/evaluations/:collaboratorId', '/db/evaluations/:collaboratorId', '/evaluations/:collaboratorId'], async (req, res) => {
+  try {
+    const evaluations = await getEvaluationsByCollaborator(req.params.collaboratorId);
+    return res.json({ success: true, evaluations });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PDI (Planes de Desarrollo Individual)
+app.post(['/api/db/pdi', '/api/pdi', '/db/pdi', '/pdi'], async (req, res) => {
+  try {
+    const result = await savePdi(req.body);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get(['/api/db/pdi/:collaboratorId', '/api/pdi/:collaboratorId', '/db/pdi/:collaboratorId', '/pdi/:collaboratorId'], async (req, res) => {
+  try {
+    const pdi = await getPdiByCollaborator(req.params.collaboratorId);
+    return res.json({ success: true, pdi });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Envío de Correo
+app.post(['/api/send-email', '/send-email'], async (req, res) => {
+  const { to, subject, body, employeeName, idNumber, position, roleLabel, url } = req.body || {};
   if (!to || !subject) {
     return res.status(400).json({ error: 'Faltan campos requeridos: to, subject' });
   }
@@ -228,9 +340,9 @@ apiRouter.post('/send-email', async (req, res) => {
   });
 });
 
-// 2. Reactivos Situacionales con Gemini AI
-apiRouter.post('/generate-situational', async (req, res) => {
-  const { descriptor, position } = req.body;
+// Reactivos Situacionales con Gemini AI
+app.post(['/api/generate-situational', '/generate-situational'], async (req, res) => {
+  const { descriptor, position } = req.body || {};
   const keyFuncs = (descriptor?.keyFunctions && descriptor.keyFunctions.length > 0)
     ? descriptor.keyFunctions
     : (descriptor?.responsibilities || ['Supervisión y control diario del piso de venta']);
@@ -265,7 +377,6 @@ Responde ÚNICAMENTE con un array JSON válido de las 5 preguntas.`;
     }
   }
 
-  // Fallback determinístico
   return res.json({
     success: true,
     mode: 'deterministic-fallback',
@@ -287,9 +398,9 @@ Responde ÚNICAMENTE con un array JSON válido de las 5 preguntas.`;
   });
 });
 
-// 3. Dictamen de Promoción con Gemini AI
-apiRouter.post('/evaluate-promotion', async (req, res) => {
-  const { targetPosition, interviewScore } = req.body;
+// Dictamen de Promoción con Gemini AI
+app.post(['/api/evaluate-promotion', '/evaluate-promotion'], async (req, res) => {
+  const { targetPosition, interviewScore } = req.body || {};
   const mockAnalysis = `Análisis de Idoneidad:
 El postulante demuestra un 94.6% de consistencia entre sus competencias observadas y las exigencias del cargo "${targetPosition || 'Posición Evaluada'}". Se recomienda su incorporación con acompañamiento ejecutivo en los primeros 60 días.`;
 
@@ -299,120 +410,5 @@ El postulante demuestra un 94.6% de consistencia entre sus competencias observad
     verdict: (interviewScore || 4.5) >= 4.5 ? 'Altamente Idóneo / Prioritario' : 'Elegible / Apto'
   });
 });
-
-// 4. Autenticación de Usuario (Supabase / Postgres)
-apiRouter.post(['/auth/login', '/login'], async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ success: false, message: 'Usuario y contraseña requeridos' });
-    }
-    const result = await authenticateUser(username, password);
-    return res.json(result);
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// 5. Estado de Conexión a Base de Datos
-apiRouter.get(['/db/status', '/status'], async (_req, res) => {
-  try {
-    const status = await testConnection();
-    return res.json(status);
-  } catch (err: any) {
-    return res.status(500).json({ connected: false, message: err.message });
-  }
-});
-
-// 6. Inicialización de Tablas
-apiRouter.post(['/db/init', '/init'], async (_req, res) => {
-  try {
-    const result = await initTables();
-    return res.json(result);
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// 7. Sincronización Masiva de Colaboradores (Censo / Excel)
-apiRouter.post(['/db/sync-census', '/sync-census'], async (req, res) => {
-  try {
-    const { collaborators } = req.body;
-    if (!Array.isArray(collaborators) || collaborators.length === 0) {
-      return res.status(400).json({ success: false, message: 'Se requiere una lista de colaboradores' });
-    }
-    const result = await syncCollaboratorsBatch(collaborators);
-    return res.json(result);
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// 8. Sincronización de Cargos
-apiRouter.post(['/db/sync-positions', '/sync-positions'], async (req, res) => {
-  try {
-    const { positions } = req.body;
-    if (!Array.isArray(positions) || positions.length === 0) {
-      return res.status(400).json({ success: false, message: 'Se requiere una lista de cargos' });
-    }
-    const result = await syncJobPositionsBatch(positions);
-    return res.json(result);
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// 9. Evaluaciones
-apiRouter.post(['/db/evaluations', '/evaluations'], async (req, res) => {
-  try {
-    const result = await saveEvaluation(req.body);
-    return res.json(result);
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-apiRouter.get(['/db/evaluations/:collaboratorId', '/evaluations/:collaboratorId'], async (req, res) => {
-  try {
-    const evaluations = await getEvaluationsByCollaborator(req.params.collaboratorId);
-    return res.json({ success: true, evaluations });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// 10. PDI (Planes de Desarrollo Individual)
-apiRouter.post(['/db/pdi', '/pdi'], async (req, res) => {
-  try {
-    const result = await savePdi(req.body);
-    return res.json(result);
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-apiRouter.get(['/db/pdi/:collaboratorId', '/pdi/:collaboratorId'], async (req, res) => {
-  try {
-    const pdi = await getPdiByCollaborator(req.params.collaboratorId);
-    return res.json({ success: true, pdi });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// Ping de diagnóstico rápido
-apiRouter.get('/ping', (_req, res) => {
-  return res.json({
-    pong: true,
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'unknown',
-    hasSupabaseUrl: !!process.env.SUPABASE_URL,
-    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY
-  });
-});
-
-// Montar router en ambas rutas para garantizar coincidencia con o sin rewrite Vercel
-app.use('/api', apiRouter);
-app.use('/', apiRouter);
 
 export default app;
