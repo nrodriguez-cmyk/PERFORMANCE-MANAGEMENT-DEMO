@@ -106,14 +106,16 @@ export function DirectorExecutiveReport({
 
     // Detalle de cada colaborador con sus métricas reales calculadas
     const details = directorateCollaborators.map(c => {
+      const posLower = (c.info?.position || '').toLowerCase();
+      const hasSub = c.info?.scope === '360' || ['director', 'gerente', 'coordinador', 'supervisor', 'lider', 'líder', 'encargado'].some(r => posLower.includes(r));
+
       // Cálculo de métricas reales de evaluación
       const evalMetrics = calculateConsolidatedMetrics(
         c.selfEval,
         c.supervisorEval,
         c.peerEval,
         c.subordinateEval,
-        undefined,
-        true
+        hasSub
       );
 
       const isEvaluated = evalMetrics.isEvaluated;
