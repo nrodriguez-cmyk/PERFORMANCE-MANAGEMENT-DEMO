@@ -538,32 +538,6 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
               </button>
             )}
 
-            {/* MENÚ DESPLEGABLE OFICIAL DEL DIRECTOR: RESULTADOS DE LA DIRECCIÓN Y EVALUACIONES */}
-            {isDirector && (
-              <div className="relative">
-                <div className="flex items-center gap-1.5 bg-zinc-900 border-2 border-[#F1B400] rounded-xl px-2.5 py-1.5 shadow-md">
-                  <span className="text-[11px] font-mono font-bold text-[#F1B400] uppercase hidden sm:inline">
-                    Menú Director:
-                  </span>
-                  <div className="relative inline-block">
-                    <select
-                      value={directorViewMode}
-                      onChange={(e) => {
-                        setDirectorViewMode(e.target.value as any);
-                        setCurrentStage('inicio');
-                      }}
-                      className="appearance-none bg-black text-[#F1B400] font-black text-xs px-3 py-1 pr-7 rounded-lg border border-zinc-700 cursor-pointer hover:border-[#F1B400] focus:outline-none focus:ring-1 focus:ring-[#F1B400]"
-                      title="Menú Desplegable: Seleccionar entre Resultados de la Dirección o Evaluaciones"
-                    >
-                      <option value="resultados_direccion">Resultados de la Dirección</option>
-                      <option value="evaluaciones">Evaluaciones</option>
-                    </select>
-                    <ChevronDown size={14} className="text-[#F1B400] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Notificaciones - Visibles única y exclusivamente para el Administrador Maestro */}
             {isAdmin && (
               <div className="relative">
