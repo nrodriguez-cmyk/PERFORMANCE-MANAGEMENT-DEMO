@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AppState, EmployeeInfo, MERIT_TIERS, MeritTier } from '../types';
 import { CANGURO_COLLABORATORS, CanguroCollaborator, SUCCESSION_CRITICAL_POSITIONS, getSavedPilotEvaluation, savePilotEvaluation, clearPilotEvaluation } from '../data/canguroUniverso';
 import { calculateConsolidatedMetrics, extractAverage } from '../utils/realEvaluationMetrics';
