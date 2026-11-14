@@ -138,6 +138,19 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
     (currentUser?.position || '').toLowerCase().includes('director') ||
     (state?.employeeInfo?.position || '').toLowerCase().includes('director');
 
+  // Notificaciones filtradas: solicitudes de acceso a directores LLEGAN ÚNICA Y EXCLUSIVAMENTE AL ADMINISTRADOR
+  const visibleNotifications = useMemo(() => {
+    return (state.notifications || []).filter(n => {
+      if (n.type === 'director_access_request') {
+        return isAdmin;
+      }
+      if (!isAdmin) {
+        return n.employeeId === currentUser?.username || n.employeeId === currentUser?.collaboratorId;
+      }
+      return true;
+    });
+  }, [state.notifications, isAdmin, currentUser]);
+
   // Estado del menú desplegable del Director (Resultados de la Dirección vs Evaluaciones)
   const [directorViewMode, setDirectorViewMode] = useState<'resultados_direccion' | 'evaluaciones'>('resultados_direccion');
   const [showDirectorMenu, setShowDirectorMenu] = useState(false);
@@ -551,54 +564,55 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
               </div>
             )}
 
-            {/* Notifications */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-1.5 text-zinc-300 hover:text-[#F1B400] transition-colors rounded-full hover:bg-zinc-800"
-              >
-                <Bell size={20} />
-                {(state.notifications?.filter(n => !n.read).length || 0) > 0 && (
-                  <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                    {state.notifications!.filter(n => !n.read).length}
-                  </span>
-                )}
-              </button>
+            {/* Notificaciones - Visibles única y exclusivamente para el Administrador Maestro */}
+            {isAdmin && (
+              <div className="relative">
+                <button 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-1.5 text-zinc-300 hover:text-[#F1B400] transition-colors rounded-full hover:bg-zinc-800"
+                >
+                  <Bell size={20} />
+                  {(visibleNotifications.filter(n => !n.read).length || 0) > 0 && (
+                    <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                      {visibleNotifications.filter(n => !n.read).length}
+                    </span>
+                  )}
+                </button>
 
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-96 sm:w-[440px] bg-white border border-zinc-200 rounded-xl shadow-2xl z-50 text-zinc-800 overflow-hidden">
-                  <div className="bg-zinc-950 text-white px-4 py-3 flex justify-between items-center border-b border-[#F1B400]/40">
-                    <div className="flex items-center gap-2">
-                      <Bell size={16} className="text-[#F1B400]" />
-                      <h3 className="font-black text-xs uppercase tracking-wider">
-                        Notificaciones de Evaluaciones
-                      </h3>
-                      {(state.notifications || []).filter(n => !n.read).length > 0 && (
-                        <span className="text-[10px] bg-[#F1B400] text-black font-bold px-1.5 py-0.2 rounded-full font-mono">
-                          {(state.notifications || []).filter(n => !n.read).length}
-                        </span>
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => {
-                        const newNotes = (state.notifications || []).map(n => ({...n, read: true}));
-                        onUpdateState({...state, notifications: newNotes});
-                      }}
-                      className="text-xs text-[#F1B400] font-bold hover:underline"
-                    >
-                      Marcar todo leído
-                    </button>
-                  </div>
-
-                  <div className="max-h-96 overflow-y-auto divide-y divide-zinc-100">
-                    {(!state.notifications || state.notifications.length === 0) ? (
-                      <div className="p-6 text-center text-zinc-500 text-sm flex flex-col items-center justify-center py-10">
-                        <Bell className="text-zinc-300 mb-2" size={28} />
-                        <span className="font-semibold text-zinc-700">No hay notificaciones nuevas</span>
-                        <span className="text-xs text-zinc-400 mt-1">Las evaluaciones entregadas aparecerán aquí en tiempo real.</span>
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-96 sm:w-[440px] bg-white border border-zinc-200 rounded-xl shadow-2xl z-50 text-zinc-800 overflow-hidden">
+                    <div className="bg-zinc-950 text-white px-4 py-3 flex justify-between items-center border-b border-[#F1B400]/40">
+                      <div className="flex items-center gap-2">
+                        <Bell size={16} className="text-[#F1B400]" />
+                        <h3 className="font-black text-xs uppercase tracking-wider">
+                          Notificaciones de Evaluaciones
+                        </h3>
+                        {visibleNotifications.filter(n => !n.read).length > 0 && (
+                          <span className="text-[10px] bg-[#F1B400] text-black font-bold px-1.5 py-0.2 rounded-full font-mono">
+                            {visibleNotifications.filter(n => !n.read).length}
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      (state.notifications || []).map((n, i) => {
+                      <button 
+                        onClick={() => {
+                          const newNotes = (state.notifications || []).map(n => ({...n, read: true}));
+                          onUpdateState({...state, notifications: newNotes});
+                        }}
+                        className="text-xs text-[#F1B400] font-bold hover:underline"
+                      >
+                        Marcar todo leído
+                      </button>
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto divide-y divide-zinc-100">
+                      {visibleNotifications.length === 0 ? (
+                        <div className="p-6 text-center text-zinc-500 text-sm flex flex-col items-center justify-center py-10">
+                          <Bell className="text-zinc-300 mb-2" size={28} />
+                          <span className="font-semibold text-zinc-700">No hay notificaciones nuevas</span>
+                          <span className="text-xs text-zinc-400 mt-1">Las evaluaciones entregadas y solicitudes de directores aparecerán aquí en tiempo real.</span>
+                        </div>
+                      ) : (
+                        visibleNotifications.map((n, i) => {
                         // Solicitudes especiales de Directores para acceso individual
                         if (n.type === 'director_access_request') {
                           return (
@@ -766,6 +780,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                 </div>
               )}
             </div>
+          )}
 
             {/* User Badge / Session State (Login: Usuario = Cédula, Password = Cédula) */}
             {currentUser ? (

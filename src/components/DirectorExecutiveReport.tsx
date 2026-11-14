@@ -12,6 +12,7 @@ import {
   normalizeDirectorateKey
 } from '../services/directorPermissionService';
 import { MERIT_TIERS, MeritTier } from '../types';
+import { calculateConsolidatedMetrics } from '../utils/realEvaluationMetrics';
 import { StandardGaussCurve } from './StandardGaussCurve';
 
 const OFFICIAL_DIRECTORATES = [
@@ -91,76 +92,59 @@ export function DirectorExecutiveReport({
   // Total población de la Dirección
   const populationCount = directorateCollaborators.length;
 
-  // 2. Extraer puntuaciones reales y calcular promedios por sección
+  // 2. Extraer puntuaciones REALES y calcular promedios por sección atados a respuestas reales de evaluación
   const metrics = useMemo(() => {
-    let totalScoreSum = 0;
-    let cardinalSum = 0;
-    let specificSum = 0;
-    let situationalSum = 0;
-    let selfEvalSum = 0;
-    let supervisorEvalSum = 0;
+    let sumFinal = 0;
+    let sumGoals = 0;
+    let sumCompetencies = 0;
+    let sumPotential = 0;
+    let sumSelf = 0;
+    let sumSup = 0;
     let evaluatedCount = 0;
 
     const scoresList: number[] = [];
 
-    // Detalle de cada colaborador
+    // Detalle de cada colaborador con sus métricas reales calculadas
     const details = directorateCollaborators.map(c => {
-      // Puntuación global del colaborador
-      let finalScore = c.metrics?.performanceScore || 0;
-      let isEvaluated = false;
+      // Cálculo de métricas reales de evaluación
+      const evalMetrics = calculateConsolidatedMetrics(
+        c.selfEval,
+        c.supervisorEval,
+        c.peerEval,
+        c.subordinateEval,
+        undefined,
+        true
+      );
 
-      // Buscar en evaluaciones enviadas
-      if (c.supervisorEval?.submittedAt || c.selfEval?.submittedAt) {
-        isEvaluated = true;
-      }
+      const isEvaluated = evalMetrics.isEvaluated;
+      const finalScore = isEvaluated ? evalMetrics.finalScore : 0;
+      const goalsScore = isEvaluated ? evalMetrics.block1Score : 0;
+      const compScore = isEvaluated ? evalMetrics.block2Score : 0;
+      const potScore = isEvaluated ? evalMetrics.potentialScore : 0;
+      const selfScore = isEvaluated ? evalMetrics.evaluatorAverages.self : 0;
+      const supScore = isEvaluated ? evalMetrics.evaluatorAverages.supervisor : 0;
 
-      // Desglose de secciones
-      let cardinal = 4.10;
-      let specific = 4.00;
-      let situational = 4.15;
-      let selfScore = 4.20;
-      let supScore = 4.05;
-
-      if (c.supervisorEval?.scores && Object.keys(c.supervisorEval.scores).length > 0) {
-        const supScores = Object.values(c.supervisorEval.scores).map(v => Number(v) || 0);
-        supScore = supScores.reduce((a, b) => a + b, 0) / supScores.length;
-        isEvaluated = true;
-      }
-      if (c.selfEval?.scores && Object.keys(c.selfEval.scores).length > 0) {
-        const sScores = Object.values(c.selfEval.scores).map(v => Number(v) || 0);
-        selfScore = sScores.reduce((a, b) => a + b, 0) / sScores.length;
-        isEvaluated = true;
-      }
-
-      if (finalScore <= 0) {
-        // Asignar promedio ponderado realista basado en nivel o posición
-        finalScore = isEvaluated ? ((supScore * 0.6) + (selfScore * 0.4)) : (3.75 + ((parseInt(c.info.id.replace(/\D/g, '') || '0', 10) % 15) * 0.08));
-        finalScore = Math.min(5.0, Math.max(2.5, Number(finalScore.toFixed(2))));
-      }
-
-      cardinal = Number((finalScore * 0.98).toFixed(2));
-      specific = Number((finalScore * 1.02 > 5 ? 5.0 : finalScore * 1.02).toFixed(2));
-      situational = Number((finalScore * 0.99).toFixed(2));
-
-      if (isEvaluated || finalScore > 0) {
+      if (isEvaluated && finalScore > 0) {
         evaluatedCount++;
-        totalScoreSum += finalScore;
-        cardinalSum += cardinal;
-        specificSum += specific;
-        situationalSum += situational;
-        selfEvalSum += selfScore;
-        supervisorEvalSum += supScore;
+        sumFinal += finalScore;
+        sumGoals += goalsScore;
+        sumCompetencies += compScore;
+        sumPotential += potScore;
+        sumSelf += selfScore;
+        sumSup += supScore;
         scoresList.push(finalScore);
       }
 
-      // Clasificación en tramo de mérito
-      const base100 = (finalScore / 5) * 100;
-      let tier: MeritTier = MERIT_TIERS[3];
-      if (base100 < 55) tier = MERIT_TIERS[1];
-      else if (base100 <= 65) tier = MERIT_TIERS[2];
-      else if (base100 <= 79) tier = MERIT_TIERS[3];
-      else if (base100 <= 100) tier = MERIT_TIERS[4];
-      else tier = MERIT_TIERS[5];
+      // Tramo de mérito oficial
+      const base100 = isEvaluated ? evalMetrics.base100Score : 0;
+      let tier: MeritTier = isEvaluated ? evalMetrics.meritTier : MERIT_TIERS[2];
+      if (isEvaluated) {
+        if (base100 < 55) tier = MERIT_TIERS[0];
+        else if (base100 <= 65) tier = MERIT_TIERS[1];
+        else if (base100 <= 79) tier = MERIT_TIERS[2];
+        else if (base100 <= 100) tier = MERIT_TIERS[3];
+        else tier = MERIT_TIERS[4];
+      }
 
       return {
         id: c.info.id,
@@ -170,65 +154,83 @@ export function DirectorExecutiveReport({
         department: c.info.department,
         finalScore,
         base100: Math.round(base100),
-        cardinal,
-        specific,
-        situational,
+        goalsScore,
+        compScore,
+        potScore,
+        selfScore,
+        supScore,
         isEvaluated,
         tier
       };
     });
 
-    const activeCount = scoresList.length || 1;
-    const avgScore = Number((totalScoreSum / activeCount).toFixed(2));
-    const avgCardinal = Number((cardinalSum / activeCount).toFixed(2));
-    const avgSpecific = Number((specificSum / activeCount).toFixed(2));
-    const avgSituational = Number((situationalSum / activeCount).toFixed(2));
-    const avgSelf = Number((selfEvalSum / activeCount).toFixed(2));
-    const avgSup = Number((supervisorEvalSum / activeCount).toFixed(2));
+    const activeCount = evaluatedCount > 0 ? evaluatedCount : 1;
+    const avgScore = evaluatedCount > 0 ? Number((sumFinal / activeCount).toFixed(2)) : 0;
+    const avgGoals = evaluatedCount > 0 ? Number((sumGoals / activeCount).toFixed(2)) : 0;
+    const avgCompetencies = evaluatedCount > 0 ? Number((sumCompetencies / activeCount).toFixed(2)) : 0;
+    const avgPotential = evaluatedCount > 0 ? Number((sumPotential / activeCount).toFixed(2)) : 0;
+    const avgSelf = evaluatedCount > 0 ? Number((sumSelf / activeCount).toFixed(2)) : 0;
+    const avgSup = evaluatedCount > 0 ? Number((sumSup / activeCount).toFixed(2)) : 0;
 
-    // Desviación estándar (sigma)
-    const variance = scoresList.reduce((acc, s) => acc + Math.pow(s - avgScore, 2), 0) / activeCount;
-    const stdDev = Number(Math.sqrt(variance).toFixed(2)) || 0.45;
+    // Desviación estándar (sigma) de las calificaciones reales
+    const variance = evaluatedCount > 1
+      ? scoresList.reduce((acc, s) => acc + Math.pow(s - avgScore, 2), 0) / evaluatedCount
+      : 0;
+    const stdDev = evaluatedCount > 1 ? Number(Math.sqrt(variance).toFixed(2)) : 0;
 
     // Conteo por tramos de Gauss en la Dirección
     const tierCounts = {
-      1: details.filter(d => d.tier.id === 1).length,
-      2: details.filter(d => d.tier.id === 2).length,
-      3: details.filter(d => d.tier.id === 3).length,
-      4: details.filter(d => d.tier.id === 4).length,
-      5: details.filter(d => d.tier.id === 5).length,
+      1: details.filter(d => d.isEvaluated && d.tier.id === 1).length,
+      2: details.filter(d => d.isEvaluated && d.tier.id === 2).length,
+      3: details.filter(d => d.isEvaluated && d.tier.id === 3).length,
+      4: details.filter(d => d.isEvaluated && d.tier.id === 4).length,
+      5: details.filter(d => d.isEvaluated && d.tier.id === 5).length,
     };
+
+    // ID del tramo de la media
+    let avgTierId: 1 | 2 | 3 | 4 | 5 = 3;
+    const avgBase100 = (avgScore / 5) * 100;
+    if (avgBase100 < 55) avgTierId = 1;
+    else if (avgBase100 <= 65) avgTierId = 2;
+    else if (avgBase100 <= 79) avgTierId = 3;
+    else if (avgBase100 <= 100) avgTierId = 4;
+    else avgTierId = 5;
 
     return {
       details,
       evaluatedCount,
-      coveragePct: populationCount > 0 ? Math.round((evaluatedCount / populationCount) * 100) : 100,
+      coveragePct: populationCount > 0 ? Math.round((evaluatedCount / populationCount) * 100) : 0,
       avgScore,
-      avgCardinal,
-      avgSpecific,
-      avgSituational,
+      avgGoals,
+      avgCompetencies,
+      avgPotential,
       avgSelf,
       avgSup,
       stdDev,
-      tierCounts
+      tierCounts,
+      avgTierId
     };
   }, [directorateCollaborators, populationCount]);
 
   // 3. Desglose por Cargo dentro de la Dirección
   const cargoBreakdown = useMemo(() => {
-    const map = new Map<string, { count: number; totalScore: number }>();
+    const map = new Map<string, { count: number; evalCount: number; totalScore: number }>();
     metrics.details.forEach(d => {
       const pos = d.position || 'Colaborador';
-      const existing = map.get(pos) || { count: 0, totalScore: 0 };
+      const existing = map.get(pos) || { count: 0, evalCount: 0, totalScore: 0 };
       existing.count += 1;
-      existing.totalScore += d.finalScore;
+      if (d.isEvaluated && d.finalScore > 0) {
+        existing.evalCount += 1;
+        existing.totalScore += d.finalScore;
+      }
       map.set(pos, existing);
     });
 
     return Array.from(map.entries()).map(([cargo, data]) => ({
       cargo,
       count: data.count,
-      avg: Number((data.totalScore / data.count).toFixed(2)),
+      evalCount: data.evalCount,
+      avg: data.evalCount > 0 ? Number((data.totalScore / data.evalCount).toFixed(2)) : 0,
       pct: Math.round((data.count / (populationCount || 1)) * 100)
     })).sort((a, b) => b.avg - a.avg);
   }, [metrics.details, populationCount]);
@@ -331,13 +333,15 @@ export function DirectorExecutiveReport({
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-zinc-950 font-mono">{metrics.avgScore}</span>
+            <span className="text-3xl font-black text-zinc-950 font-mono">
+              {metrics.evaluatedCount > 0 ? metrics.avgScore.toFixed(2) : '0.00'}
+            </span>
             <span className="text-xs font-bold text-zinc-400 font-mono">/ 5.00 pts</span>
           </div>
           <div className="mt-2 flex items-center justify-between text-[11px]">
             <span className="text-zinc-500">Equivalencia Base 100:</span>
             <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-              {Math.round((metrics.avgScore / 5) * 100)}%
+              {metrics.evaluatedCount > 0 ? `${Math.round((metrics.avgScore / 5) * 100)}%` : '0%'}
             </span>
           </div>
         </div>
@@ -371,13 +375,15 @@ export function DirectorExecutiveReport({
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-zinc-950 font-mono">±{metrics.stdDev}</span>
+            <span className="text-3xl font-black text-zinc-950 font-mono">
+              {metrics.evaluatedCount > 1 ? `±${metrics.stdDev}` : '±0.00'}
+            </span>
             <span className="text-xs font-bold text-zinc-400 font-mono">pts</span>
           </div>
           <div className="mt-2 flex items-center justify-between text-[11px]">
             <span className="text-zinc-500">Consistencia:</span>
             <span className="font-mono font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
-              {metrics.stdDev <= 0.5 ? 'Alta Homogeneidad' : 'Dispersión Moderada'}
+              {metrics.evaluatedCount > 1 ? (metrics.stdDev <= 0.5 ? 'Alta Homogeneidad' : 'Dispersión Moderada') : 'Sin Dispersión'}
             </span>
           </div>
         </div>
@@ -392,19 +398,21 @@ export function DirectorExecutiveReport({
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-lg font-black text-zinc-950 uppercase truncate">
-              {metrics.avgScore >= 4.0 ? 'Sobresaliente' : 'Esperado'}
+              {metrics.evaluatedCount > 0 
+                ? (metrics.avgScore >= 4.0 ? 'Sobresaliente' : metrics.avgScore >= 3.3 ? 'Esperado' : 'En Desarrollo')
+                : 'Pendiente'}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-[11px]">
             <span className="text-zinc-500">Ubicación Gauss:</span>
             <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-              Tramo 4 / P80+
+              {metrics.evaluatedCount > 0 ? `Tramo ${metrics.avgTierId}` : 'Sin Calibrar'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 3. PROMEDIOS DESGLOSADOS POR SECCIÓN EVALUATIVA */}
+      {/* 3. PROMEDIOS DESGLOSADOS POR LAS 3 SECCIONES REALES DE LA EVALUACIÓN */}
       <div className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-zinc-100">
           <Layers className="text-[#D99C00]" size={20} />
@@ -413,60 +421,84 @@ export function DirectorExecutiveReport({
               Puntuaciones Promedio por Sección de la Evaluación
             </h2>
             <p className="text-xs text-zinc-500">
-              Rendimiento agregado de la Dirección en cada dimensión del modelo de competencias.
+              Rendimiento agregado de la Dirección basado exclusivamente en respuestas reales de los colaboradores participantes.
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Sección 1: Competencias Cardinales */}
+          {/* Sección 1: Evaluación de Metas - Indicadores - Objetivos (KPIs) - 60% */}
           <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-bold text-zinc-700">1. Competencias Cardinales</span>
-              <span className="font-mono font-black text-zinc-950 text-sm">{metrics.avgCardinal} / 5.0</span>
+              <span className="font-bold text-zinc-800">1. Evaluación de Metas - Indicadores - Objetivos</span>
+              <span className="font-mono font-black text-zinc-950 text-sm">
+                {metrics.evaluatedCount > 0 ? `${metrics.avgGoals.toFixed(2)} / 5.0` : 'Pendiente'}
+              </span>
             </div>
             <div className="w-full bg-zinc-200 h-2.5 rounded-full overflow-hidden">
               <div
                 className="bg-amber-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${(metrics.avgCardinal / 5) * 100}%` }}
+                style={{ width: `${metrics.evaluatedCount > 0 ? (metrics.avgGoals / 5) * 100 : 0}%` }}
               />
             </div>
-            <p className="text-[11px] text-zinc-500">
-              Orientación al Cliente, Innovación, Análisis, Trabajo en Equipo y Adaptabilidad.
+            <div className="flex justify-between items-center text-[10.5px] text-zinc-500 pt-0.5">
+              <span>Peso Ponderado: <strong className="text-zinc-800">60%</strong></span>
+              <span className="font-mono font-bold text-amber-700">
+                {metrics.evaluatedCount > 0 ? `${Math.round((metrics.avgGoals / 5) * 100)}%` : '0%'}
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-snug pt-0.5">
+              Medición del cumplimiento de metas operativas, indicadores de gestión y objetivos clave.
             </p>
           </div>
 
-          {/* Sección 2: Competencias Específicas / Funcionales */}
+          {/* Sección 2: Evaluación por Competencias - 30% */}
           <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-bold text-zinc-700">2. Competencias Específicas del Área</span>
-              <span className="font-mono font-black text-zinc-950 text-sm">{metrics.avgSpecific} / 5.0</span>
+              <span className="font-bold text-zinc-800">2. Evaluación por Competencias</span>
+              <span className="font-mono font-black text-zinc-950 text-sm">
+                {metrics.evaluatedCount > 0 ? `${metrics.avgCompetencies.toFixed(2)} / 5.0` : 'Pendiente'}
+              </span>
             </div>
             <div className="w-full bg-zinc-200 h-2.5 rounded-full overflow-hidden">
               <div
                 className="bg-blue-600 h-full rounded-full transition-all duration-500"
-                style={{ width: `${(metrics.avgSpecific / 5) * 100}%` }}
+                style={{ width: `${metrics.evaluatedCount > 0 ? (metrics.avgCompetencies / 5) * 100 : 0}%` }}
               />
             </div>
-            <p className="text-[11px] text-zinc-500">
-              Conocimiento técnico especializado y ejecución de funciones clave de la Dirección.
+            <div className="flex justify-between items-center text-[10.5px] text-zinc-500 pt-0.5">
+              <span>Peso Ponderado: <strong className="text-zinc-800">30%</strong></span>
+              <span className="font-mono font-bold text-blue-700">
+                {metrics.evaluatedCount > 0 ? `${Math.round((metrics.avgCompetencies / 5) * 100)}%` : '0%'}
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-snug pt-0.5">
+              Competencias cardinales, transversales y funcionales exigidas para el cargo.
             </p>
           </div>
 
-          {/* Sección 3: Reactivos Situacionales */}
+          {/* Sección 3: Evaluación de Potencial y Liderazgo - 10% */}
           <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-bold text-zinc-700">3. Reactivos Situacionales (Juicio)</span>
-              <span className="font-mono font-black text-zinc-950 text-sm">{metrics.avgSituational} / 5.0</span>
+              <span className="font-bold text-zinc-800">3. Evaluación de Potencial y Liderazgo</span>
+              <span className="font-mono font-black text-zinc-950 text-sm">
+                {metrics.evaluatedCount > 0 ? `${metrics.avgPotential.toFixed(2)} / 5.0` : 'Pendiente'}
+              </span>
             </div>
             <div className="w-full bg-zinc-200 h-2.5 rounded-full overflow-hidden">
               <div
                 className="bg-purple-600 h-full rounded-full transition-all duration-500"
-                style={{ width: `${(metrics.avgSituational / 5) * 100}%` }}
+                style={{ width: `${metrics.evaluatedCount > 0 ? (metrics.avgPotential / 5) * 100 : 0}%` }}
               />
             </div>
-            <p className="text-[11px] text-zinc-500">
-              Toma de decisiones ante escenarios críticos y resolución de imprevistos reales.
+            <div className="flex justify-between items-center text-[10.5px] text-zinc-500 pt-0.5">
+              <span>Peso Ponderado: <strong className="text-zinc-800">10%</strong></span>
+              <span className="font-mono font-bold text-purple-700">
+                {metrics.evaluatedCount > 0 ? `${Math.round((metrics.avgPotential / 5) * 100)}%` : '0%'}
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-snug pt-0.5">
+              Agilidad de aprendizaje, visión estratégica y aptitud de sucesión y mando.
             </p>
           </div>
         </div>
@@ -475,14 +507,14 @@ export function DirectorExecutiveReport({
         <div className="mt-4 pt-4 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-600 gap-3">
           <div className="flex items-center gap-6">
             <span>
-              Promedio Autoevaluación: <strong className="text-zinc-950 font-mono">{metrics.avgSelf} / 5.00</strong>
+              Promedio Autoevaluación: <strong className="text-zinc-950 font-mono">{metrics.evaluatedCount > 0 ? `${metrics.avgSelf.toFixed(2)} / 5.00` : 'Pendiente'}</strong>
             </span>
             <span>
-              Promedio Evaluación de Supervisores: <strong className="text-zinc-950 font-mono">{metrics.avgSup} / 5.00</strong>
+              Promedio Evaluación de Supervisores: <strong className="text-zinc-950 font-mono">{metrics.evaluatedCount > 0 ? `${metrics.avgSup.toFixed(2)} / 5.00` : 'Pendiente'}</strong>
             </span>
           </div>
           <span className="px-3 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-full font-mono font-bold text-[11px]">
-            Brecha de Calibración: {Math.abs(Number((metrics.avgSelf - metrics.avgSup).toFixed(2)))} pts
+            Brecha de Calibración: {metrics.evaluatedCount > 0 ? `${Math.abs(Number((metrics.avgSelf - metrics.avgSup).toFixed(2)))} pts` : '0.00 pts'}
           </span>
         </div>
       </div>
@@ -504,14 +536,16 @@ export function DirectorExecutiveReport({
 
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-zinc-900 text-[#F1B400] font-black">
-              Media Dirección: {metrics.avgScore.toFixed(2)} pts ({Math.round((metrics.avgScore / 5) * 100)}%)
+              {metrics.evaluatedCount > 0 
+                ? `Media Dirección: ${metrics.avgScore.toFixed(2)} pts (${Math.round((metrics.avgScore / 5) * 100)}%)`
+                : 'En Espera de Evaluaciones'}
             </span>
           </div>
         </div>
 
         {/* Curva de Distribución Normal Institucional Estandarizada */}
         <StandardGaussCurve
-          pins={[
+          pins={metrics.evaluatedCount > 0 ? [
             {
               score: metrics.avgScore,
               label: 'Media de la Dirección',
@@ -519,10 +553,10 @@ export function DirectorExecutiveReport({
               color: '#F1B400',
               isPrimary: true
             }
-          ]}
+          ] : []}
           tierCounts={metrics.tierCounts}
-          totalCount={populationCount}
-          highlightedTierId={metrics.avgTierId}
+          totalCount={metrics.evaluatedCount || populationCount}
+          highlightedTierId={metrics.evaluatedCount > 0 ? metrics.avgTierId : undefined}
           showCards={true}
         />
 
@@ -734,14 +768,26 @@ export function DirectorExecutiveReport({
                       <td className="p-3 text-zinc-700">{collab.position}</td>
                       <td className="p-3 text-zinc-500 text-[11px]">{collab.department}</td>
                       <td className="p-3 text-center font-mono font-black text-zinc-950">
-                        <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
-                          {collab.finalScore} / 5.0
-                        </span>
+                        {collab.isEvaluated ? (
+                          <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
+                            {collab.finalScore.toFixed(2)} / 5.0
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-400 font-bold text-[10.5px]">
+                            Pendiente
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${collab.tier.badgeBg} ${collab.tier.badgeText} border`}>
-                          {collab.tier.name}
-                        </span>
+                        {collab.isEvaluated ? (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${collab.tier.badgeBg} ${collab.tier.badgeText} border`}>
+                            {collab.tier.name}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-100 text-zinc-400 border border-zinc-200">
+                            Sin Evaluar
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 text-center">
                         {onSelectCollaborator && (

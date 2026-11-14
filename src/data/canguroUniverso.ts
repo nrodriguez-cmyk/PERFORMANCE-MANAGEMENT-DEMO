@@ -379,24 +379,18 @@ function generateInitialCollaborators(): CanguroCollaborator[] {
   }
 
   // Cargar colaboradores personalizados guardados en localStorage
+  // Si el usuario cargó una base masiva oficial, REEMPLAZA totalmente la base anterior
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const storedCustom = window.localStorage.getItem('canguro_custom_collaborators');
       if (storedCustom) {
         const parsedCustom = JSON.parse(storedCustom);
-        if (Array.isArray(parsedCustom)) {
+        if (Array.isArray(parsedCustom) && parsedCustom.length > 0) {
+          // Reemplazo completo: solo utilizar la nómina adjuntada por el usuario
+          collaborators.length = 0;
           parsedCustom.forEach(c => {
             if (!c || !c.info) return;
-            const cCedula = (c.info.idNumber || '').replace(/\D/g, '');
-            const exIdx = collaborators.findIndex(ex => 
-              (c.info.id && ex.info.id === c.info.id) || 
-              (cCedula && ex.info.idNumber && ex.info.idNumber.replace(/\D/g, '') === cCedula)
-            );
-            if (exIdx >= 0) {
-              collaborators[exIdx].info = { ...collaborators[exIdx].info, ...c.info };
-            } else {
-              collaborators.unshift(ensureFullCollaborator(c));
-            }
+            collaborators.push(ensureFullCollaborator(c));
           });
         }
       }
@@ -677,7 +671,8 @@ export function createOrUpdateCollaborator(data: {
 }
 
 /**
- * Importación y vinculación masiva de colaboradores de alta eficiencia (2.400+ registros en milisegundos)
+ * Importación y vinculación masiva de colaboradores de alta eficiencia.
+ * REEMPLAZO COMPLETO: Elimina la base de datos anterior y utiliza exclusivamente la nómina adjunta.
  */
 export function bulkCommitCollaborators(items: Array<{
   fullName: string;
@@ -690,15 +685,10 @@ export function bulkCommitCollaborators(items: Array<{
   hireDate?: string;
   scope?: '360' | '180';
 }>): { count: number; added: number; updated: number } {
-  const idMap = new Map<string, CanguroCollaborator>();
-  for (const c of CANGURO_COLLABORATORS) {
-    if (c.info?.id) idMap.set(c.info.id, c);
-    const num = (c.info?.idNumber || '').replace(/\D/g, '');
-    if (num) idMap.set(num, c);
-  }
+  // ELIMINAR BASE DE DATOS ANTERIOR COMPLETAMENTE SEGÚN SOLICITUD EXPLÍCITA DEL USUARIO
+  CANGURO_COLLABORATORS.length = 0;
 
   let added = 0;
-  let updated = 0;
   const compactList: Array<{ info: EmployeeInfo }> = [];
 
   for (const item of items) {
@@ -718,7 +708,6 @@ export function bulkCommitCollaborators(items: Array<{
     const scope = item.scope || (['Coordinador', 'Supervisor', 'Gerente', 'Director', 'Encargado de Tienda'].includes(position) ? '360' : '180');
 
     const empId = `emp-${cedula || Date.now()}`;
-    const existing = (cedula ? idMap.get(cedula) : null) || idMap.get(empId);
 
     const infoObj: EmployeeInfo = {
       id: empId,
@@ -738,21 +727,13 @@ export function bulkCommitCollaborators(items: Array<{
       scope,
     };
 
-    if (existing) {
-      existing.info = { ...existing.info, ...infoObj };
-      updated++;
-    } else {
-      const newCollab = ensureFullCollaborator({ info: infoObj });
-      CANGURO_COLLABORATORS.unshift(newCollab);
-      if (cedula) idMap.set(cedula, newCollab);
-      idMap.set(empId, newCollab);
-      added++;
-    }
-
+    const newCollab = ensureFullCollaborator({ info: infoObj });
+    CANGURO_COLLABORATORS.push(newCollab);
+    added++;
     compactList.push({ info: infoObj });
   }
 
-  // Persistir en LocalStorage en formato compacto sin exceder cuota
+  // Persistir en LocalStorage la nueva nómina completa reemplazando la anterior
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('canguro_custom_collaborators', JSON.stringify(compactList));
@@ -770,7 +751,7 @@ export function bulkCommitCollaborators(items: Array<{
     }
   }
 
-  return { count: items.length, added, updated };
+  return { count: CANGURO_COLLABORATORS.length, added, updated: 0 };
 }
 
 export interface CollaboratorPreviewItem {

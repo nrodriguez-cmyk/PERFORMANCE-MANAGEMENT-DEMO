@@ -70,80 +70,135 @@ export function EvaluationHubHome({
     const posNormalized = `${activeUser?.position || ''} ${activeUser?.department || ''}`.toLowerCase();
     const isDirector = activeUser?.role === 'director' || posNormalized.includes('director');
 
-    // VISTA EXCLUSIVA PARA DIRECTORES: INFORME EJECUTIVO + CAMPANA DE GAUSS + MENÚ DESPLEGABLE
+    // VISTA EXCLUSIVA PARA DIRECTORES: MENÚ FIJO VERTICAL A LA IZQUIERDA + PLANTILLA ACTIVA + RESULTADOS / EVALUACIONES
     if (isDirector && activeUser) {
+      // Cálculo preciso de la plantilla de colaboradores activos adscritos a la Dirección del Director
+      const dirRaw = (activeUser.directorate || '').trim();
+      const dirNorm = dirRaw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^(direccion|dirección)\s+(de\s+)?/i, '').trim();
+
+      const directorActiveHeadcount = CANGURO_COLLABORATORS.filter(c => {
+        const cDir = (c.info?.directorate || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^(direccion|dirección)\s+(de\s+)?/i, '').trim();
+        const cDept = (c.info?.department || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^(direccion|dirección)\s+(de\s+)?/i, '').trim();
+        if (!dirNorm) return false;
+        return cDir.includes(dirNorm) || dirNorm.includes(cDir) || cDept.includes(dirNorm) || dirNorm.includes(cDept);
+      }).length || CANGURO_COLLABORATORS.filter(c => c.info?.directorate === activeUser.directorate).length;
+
       return (
-        <div className="space-y-5">
-          {/* BARRA SUPERIOR DE CONTROL PARA EL DIRECTOR CON MENÚ DESPLEGABLE */}
-          <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-2 border-zinc-800 rounded-2xl p-4 shadow-lg text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-[#F1B400]/20 border border-[#F1B400]/40 flex items-center justify-center text-[#F1B400] shrink-0">
-                <BarChart3 size={24} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#F1B400] text-black">
-                    Portal de Director
-                  </span>
-                  <span className="text-xs text-zinc-300 font-mono font-bold">
-                    {activeUser.directorate || 'Dirección Corporativa'}
-                  </span>
+        <div className="flex flex-col lg:flex-row items-start gap-6 min-h-[calc(100vh-140px)]">
+          {/* SIDEBAR FIJO VERTICAL EN EL LADO IZQUIERDO DE LA PANTALLA */}
+          <aside className="w-full lg:w-72 shrink-0 bg-white border border-zinc-200/90 rounded-3xl p-5 shadow-sm space-y-5 lg:sticky lg:top-24 self-start">
+            {/* Cabecera del Director */}
+            <div className="space-y-3 pb-4 border-b border-zinc-100">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#D99C00] font-black text-xl shrink-0">
+                  {activeUser.fullName.charAt(0)}
                 </div>
-                <h1 className="text-lg font-black text-white leading-tight mt-0.5">
-                  {activeUser.fullName}
-                </h1>
-                <p className="text-xs text-zinc-400">
-                  {activeUser.position}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[9.5px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-950 text-[#F1B400] inline-block">
+                    PORTAL DIRECTOR
+                  </span>
+                  <h2 className="text-sm font-black text-zinc-950 truncate mt-1 leading-tight">
+                    {activeUser.fullName}
+                  </h2>
+                  <p className="text-[11px] text-zinc-500 truncate">
+                    {activeUser.position}
+                  </p>
+                </div>
               </div>
-            </div>
-
-            {/* MENÚ DESPLEGABLE SOLICITADO: RESULTADOS DE LA DIRECCIÓN Y EVALUACIONES */}
-            <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <label htmlFor="director-select-mode" className="text-xs font-bold text-zinc-300 whitespace-nowrap flex items-center gap-1.5">
-                <Sliders size={14} className="text-[#F1B400]" />
-                <span>Menú de Opciones:</span>
-              </label>
-              <div className="relative flex-1 sm:w-80">
-                <select
-                  id="director-select-mode"
-                  value={currentDirectorMode}
-                  onChange={(e) => handleDirectorModeChange(e.target.value as any)}
-                  className="w-full appearance-none bg-black text-[#F1B400] font-black text-sm px-4 py-2.5 pr-10 rounded-xl border-2 border-[#F1B400] hover:border-amber-300 focus:outline-none focus:ring-2 focus:ring-[#F1B400] shadow-md cursor-pointer transition-all"
-                  title="Menú Desplegable: Seleccionar entre Resultados de la Dirección o Evaluaciones"
-                >
-                  <option value="resultados_direccion" className="bg-zinc-900 text-white font-bold py-2">
-                    Resultados de la Dirección
-                  </option>
-                  <option value="evaluaciones" className="bg-zinc-900 text-white font-bold py-2">
-                    Evaluaciones
-                  </option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#F1B400]">
-                  <ChevronDown size={18} />
+              <div className="bg-zinc-50 border border-zinc-200/80 rounded-xl p-2.5">
+                <div className="text-[9.5px] uppercase font-bold text-zinc-400 tracking-wider">Dirección Adscrita</div>
+                <div className="text-xs font-black text-zinc-900 mt-0.5 leading-snug">
+                  {activeUser.directorate || 'Dirección Corporativa'}
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* CONTENIDO SEGÚN LA OPCIÓN DEL MENÚ DESPLEGABLE */}
-          {currentDirectorMode === 'resultados_direccion' ? (
-            <DirectorExecutiveReport
-              currentUser={activeUser}
-              onSelectCollaborator={onSelectCollaborator}
-              onAddNotification={onAddNotification}
-            />
-          ) : (
-            <CollaboratorEvaluationQuadrants
-              collaboratorName={effectiveCollabName}
-              position={effectivePosition}
-              idNumber={effectiveIdNumber}
-              department={effectiveDept}
-              directorate={effectiveDir}
-              isSupervisorOrLeader={true}
-              onOpenEvaluation={onOpenEvaluation}
-            />
-          )}
+            {/* RECUADRO DESTACADO: NÚMERO DE PLANTILLA DE COLABORADORES ACTIVOS EN SU DIRECCIÓN */}
+            <div className="bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 border-2 border-amber-300/90 rounded-2xl p-4 shadow-2xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                  <Users size={14} className="text-amber-600" />
+                  Plantilla Activa
+                </span>
+                <span className="text-[9.5px] font-mono font-bold bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full">
+                  Censo Oficial
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2 pt-1">
+                <span className="text-3xl font-black font-mono text-zinc-950">
+                  {directorActiveHeadcount}
+                </span>
+                <span className="text-xs text-zinc-600 font-bold">
+                  colaboradores
+                </span>
+              </div>
+              <p className="text-[10.5px] text-zinc-500 leading-tight pt-0.5">
+                Total de colaboradores activos adscritos a esta Dirección.
+              </p>
+            </div>
+
+            {/* MENÚ VERTICAL FIJO CON LAS DOS OPCIONES OFICIALES */}
+            <nav className="space-y-1.5 pt-1">
+              <div className="text-[10px] font-black uppercase tracking-wider text-zinc-400 px-2 mb-2">
+                Menú de la Dirección
+              </div>
+
+              {/* Opción 1: Resultados de la Dirección */}
+              <button
+                type="button"
+                onClick={() => handleDirectorModeChange('resultados_direccion')}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-black transition-all text-left ${
+                  currentDirectorMode === 'resultados_direccion'
+                    ? 'bg-zinc-950 text-[#F1B400] shadow-md border-2 border-zinc-800'
+                    : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 border border-transparent'
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <BarChart3 size={17} className={currentDirectorMode === 'resultados_direccion' ? 'text-[#F1B400]' : 'text-zinc-500'} />
+                  <span>Resultados de la Dirección</span>
+                </span>
+                <ChevronRight size={15} className={currentDirectorMode === 'resultados_direccion' ? 'text-[#F1B400]' : 'opacity-0'} />
+              </button>
+
+              {/* Opción 2: Evaluaciones */}
+              <button
+                type="button"
+                onClick={() => handleDirectorModeChange('evaluaciones')}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-black transition-all text-left ${
+                  currentDirectorMode === 'evaluaciones'
+                    ? 'bg-zinc-950 text-[#F1B400] shadow-md border-2 border-zinc-800'
+                    : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 border border-transparent'
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <LayoutGrid size={17} className={currentDirectorMode === 'evaluaciones' ? 'text-[#F1B400]' : 'text-zinc-500'} />
+                  <span>Evaluaciones</span>
+                </span>
+                <ChevronRight size={15} className={currentDirectorMode === 'evaluaciones' ? 'text-[#F1B400]' : 'opacity-0'} />
+              </button>
+            </nav>
+          </aside>
+
+          {/* CONTENIDO PRINCIPAL A LA DERECHA */}
+          <main className="flex-1 min-w-0 w-full">
+            {currentDirectorMode === 'resultados_direccion' ? (
+              <DirectorExecutiveReport
+                currentUser={activeUser}
+                onSelectCollaborator={onSelectCollaborator}
+                onAddNotification={onAddNotification}
+              />
+            ) : (
+              <CollaboratorEvaluationQuadrants
+                collaboratorName={effectiveCollabName}
+                position={effectivePosition}
+                idNumber={effectiveIdNumber}
+                department={effectiveDept}
+                directorate={effectiveDir}
+                isSupervisorOrLeader={true}
+                onOpenEvaluation={onOpenEvaluation}
+              />
+            )}
+          </main>
         </div>
       );
     }
