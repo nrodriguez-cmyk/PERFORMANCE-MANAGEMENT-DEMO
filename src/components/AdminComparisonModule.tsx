@@ -170,9 +170,9 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
     return () => window.removeEventListener('canguro_auth_change', handleAuthChange);
   }, []);
 
-  // Seguridad y Control de Acceso: Colaboradores no administradores solo tienen acceso a inicio (cuadrantes) y a su expediente personal
+  // Seguridad y Control de Acceso: Colaboradores no administradores ni directores solo tienen acceso a inicio y a su expediente personal
   useEffect(() => {
-    if (currentUser && !isAdmin) {
+    if (currentUser && !isAdmin && !isDirector) {
       if (currentStage !== 'inicio' && currentStage !== 'expediente') {
         setCurrentStage('inicio');
       }
@@ -180,13 +180,27 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
         setCurrentBlock('resumen');
       }
     }
-  }, [currentUser, isAdmin, currentStage, currentBlock]);
+  }, [currentUser, isAdmin, isDirector, currentStage, currentBlock]);
+
+  const scrollToTarget = (elementId?: string) => {
+    setTimeout(() => {
+      if (elementId) {
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 120);
+  };
 
   // Track previous navigation on change
   const navigateTo = (
     stage: 'inicio' | 'config' | 'config_desempeno' | 'config_promocion' | 'recuperacion_clave' | 'links' | 'expediente' | 'audit', 
     block?: 'dashboard_ejecutivo' | 'organizacional' | 'dashboard_promociones' | 'banco_sucesores' | 'people_analytics_educacion' | 'resumen' | 'promocion' | 'calibracion' | 'pdi' | 'evaluaciones' | 'sucesion',
-    subSection?: 'desempeno' | 'potencial' | 'ninebox' | 'calibracion' | 'pdi' | 'all'
+    subSection?: 'desempeno' | 'potencial' | 'ninebox' | 'calibracion' | 'pdi' | 'all',
+    targetElementId?: string
   ) => {
     setTabHistory(prev => [...prev, { stage: currentStage, block: currentBlock }]);
     setCurrentStage(stage);
@@ -220,6 +234,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
       }
     }
     setSidebarOpen(false);
+    scrollToTarget(targetElementId);
   };
 
   const handleBackNavigation = () => {
@@ -883,7 +898,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                     onClick={() => {
                       setSelectedCollabId('__ALL__');
                       setOrgDashboardSection('promedios_cargo');
-                      navigateTo('expediente', 'organizacional');
+                      navigateTo('expediente', 'organizacional', undefined, 'sec-promedios-por-cargo');
                     }}
                     className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-between cursor-pointer ${
                       currentStage === 'expediente' && currentBlock === 'organizacional' && orgDashboardSection === 'promedios_cargo'
@@ -909,8 +924,8 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         onClick={() => {
                           setSelectedCollabId('__ALL__');
                           setOrgDashboardSection('analitica');
-                          navigateTo('expediente', 'organizacional');
-                          setIsDetalleOperativoOpen(prev => !prev);
+                          setIsDetalleOperativoOpen(true);
+                          navigateTo('expediente', 'organizacional', undefined, 'sec-kpis');
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-between cursor-pointer ${
                           currentStage === 'expediente' && currentBlock === 'organizacional' && (orgDashboardSection === 'analitica' || orgDashboardSection === 'ranking')
@@ -938,7 +953,8 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                             onClick={() => {
                               setSelectedCollabId('__ALL__');
                               setOrgDashboardSection('analitica');
-                              navigateTo('expediente', 'organizacional');
+                              setIsDetalleOperativoOpen(true);
+                              navigateTo('expediente', 'organizacional', undefined, 'sec-kpis');
                             }}
                             className={`w-full text-left px-2 py-1.5 rounded text-[10px] font-bold transition-all flex items-start gap-1.5 cursor-pointer leading-tight ${
                               currentStage === 'expediente' && currentBlock === 'organizacional' && orgDashboardSection === 'analitica'
@@ -956,7 +972,8 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                             onClick={() => {
                               setSelectedCollabId('__ALL__');
                               setOrgDashboardSection('ranking');
-                              navigateTo('expediente', 'organizacional');
+                              setIsDetalleOperativoOpen(true);
+                              navigateTo('expediente', 'organizacional', undefined, 'sec-ranking');
                             }}
                             className={`w-full text-left px-2 py-1.5 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                               currentStage === 'expediente' && currentBlock === 'organizacional' && orgDashboardSection === 'ranking'
@@ -999,10 +1016,13 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
               <button
                 type="button"
                 onClick={() => {
-                  if (selectedCollabId === '__ALL__') {
+                  if (selectedCollabId === '__ALL__' || !selectedCollabId) {
                     handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
                   }
-                  setIsPerfilColaboradorOpen(prev => !prev);
+                  setIsPerfilColaboradorOpen(true);
+                  setIsResultadosDesempenoOpen(true);
+                  setOpenPhases(prev => ({ ...prev, fase1: true }));
+                  navigateTo('expediente', 'resumen', 'desempeno', 'fase-desempeno');
                 }}
                 className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-black transition-all text-left cursor-pointer ${
                   currentStage === 'expediente' && (currentBlock === 'resumen' || currentBlock === 'promocion' || currentBlock === 'pdi')
@@ -1029,11 +1049,13 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                     <button
                       type="button"
                       onClick={() => {
-                        if (selectedCollabId === '__ALL__') {
+                        if (selectedCollabId === '__ALL__' || !selectedCollabId) {
                           handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
                         }
-                        navigateTo('expediente', 'resumen');
-                        setIsResultadosDesempenoOpen(prev => !prev);
+                        setIsPerfilColaboradorOpen(true);
+                        setIsResultadosDesempenoOpen(true);
+                        setOpenPhases(prev => ({ ...prev, fase1: true }));
+                        navigateTo('expediente', 'resumen', 'desempeno', 'fase-desempeno');
                       }}
                       className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-between cursor-pointer ${
                         currentStage === 'expediente' && currentBlock === 'resumen'
@@ -1059,8 +1081,13 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedCollabId === '__ALL__') handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
-                            navigateTo('expediente', 'resumen', 'desempeno');
+                            if (selectedCollabId === '__ALL__' || !selectedCollabId) {
+                              handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            }
+                            setIsPerfilColaboradorOpen(true);
+                            setIsResultadosDesempenoOpen(true);
+                            setOpenPhases(prev => ({ ...prev, fase1: true }));
+                            navigateTo('expediente', 'resumen', 'desempeno', 'fase-desempeno');
                           }}
                           className={`w-full text-left px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                             currentStage === 'expediente' && currentBlock === 'resumen' && individualActiveSection === 'desempeno'
@@ -1076,8 +1103,12 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedCollabId === '__ALL__') handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
-                            navigateTo('expediente', 'resumen', 'potencial');
+                            if (selectedCollabId === '__ALL__' || !selectedCollabId) {
+                              handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            }
+                            setIsPerfilColaboradorOpen(true);
+                            setIsResultadosDesempenoOpen(true);
+                            navigateTo('expediente', 'resumen', 'potencial', 'seccion-potencial');
                           }}
                           className={`w-full text-left px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                             currentStage === 'expediente' && currentBlock === 'resumen' && individualActiveSection === 'potencial'
@@ -1093,8 +1124,12 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedCollabId === '__ALL__') handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
-                            navigateTo('expediente', 'resumen', 'ninebox');
+                            if (selectedCollabId === '__ALL__' || !selectedCollabId) {
+                              handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            }
+                            setIsPerfilColaboradorOpen(true);
+                            setIsResultadosDesempenoOpen(true);
+                            navigateTo('expediente', 'resumen', 'ninebox', 'seccion-ninebox');
                           }}
                           className={`w-full text-left px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                             currentStage === 'expediente' && currentBlock === 'resumen' && individualActiveSection === 'ninebox'
@@ -1110,8 +1145,13 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedCollabId === '__ALL__') handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
-                            navigateTo('expediente', 'resumen', 'calibracion');
+                            if (selectedCollabId === '__ALL__' || !selectedCollabId) {
+                              handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            }
+                            setIsPerfilColaboradorOpen(true);
+                            setIsResultadosDesempenoOpen(true);
+                            setOpenPhases(prev => ({ ...prev, fase2: true }));
+                            navigateTo('expediente', 'resumen', 'calibracion', 'fase-gauss');
                           }}
                           className={`w-full text-left px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                             currentStage === 'expediente' && currentBlock === 'resumen' && individualActiveSection === 'calibracion'
@@ -1135,11 +1175,14 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                     <button
                       type="button"
                       onClick={() => {
-                        if (selectedCollabId === '__ALL__') {
+                        if (selectedCollabId === '__ALL__' || !selectedCollabId) {
                           handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
                         }
-                        navigateTo('expediente', 'promocion');
-                        setIsResultadosPromocionOpen(prev => !prev);
+                        setIsPerfilColaboradorOpen(true);
+                        setIsResultadosPromocionOpen(true);
+                        setOpenPhases(prev => ({ ...prev, fasePromocion: true }));
+                        setPromotionActiveSection('brechas');
+                        navigateTo('expediente', 'promocion', undefined, 'sec-brechas-promocion');
                       }}
                       className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-between cursor-pointer ${
                         currentStage === 'expediente' && currentBlock === 'promocion'
@@ -1165,9 +1208,14 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedCollabId === '__ALL__') handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            if (selectedCollabId === '__ALL__' || !selectedCollabId) {
+                              handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            }
+                            setIsPerfilColaboradorOpen(true);
+                            setIsResultadosPromocionOpen(true);
+                            setOpenPhases(prev => ({ ...prev, fasePromocion: true }));
                             setPromotionActiveSection('brechas');
-                            navigateTo('expediente', 'promocion');
+                            navigateTo('expediente', 'promocion', undefined, 'sec-brechas-promocion');
                           }}
                           className={`w-full text-left px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                             currentStage === 'expediente' && currentBlock === 'promocion' && promotionActiveSection === 'brechas'
@@ -1183,9 +1231,14 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedCollabId === '__ALL__') handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            if (selectedCollabId === '__ALL__' || !selectedCollabId) {
+                              handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            }
+                            setIsPerfilColaboradorOpen(true);
+                            setIsResultadosPromocionOpen(true);
+                            setOpenPhases(prev => ({ ...prev, fasePromocion: true }));
                             setPromotionActiveSection('ninebox_promocion');
-                            navigateTo('expediente', 'promocion');
+                            navigateTo('expediente', 'promocion', undefined, 'sec-ninebox-promocion');
                           }}
                           className={`w-full text-left px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                             currentStage === 'expediente' && currentBlock === 'promocion' && promotionActiveSection === 'ninebox_promocion'
@@ -1201,9 +1254,14 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedCollabId === '__ALL__') handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            if (selectedCollabId === '__ALL__' || !selectedCollabId) {
+                              handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            }
+                            setIsPerfilColaboradorOpen(true);
+                            setIsResultadosPromocionOpen(true);
+                            setOpenPhases(prev => ({ ...prev, fasePromocion: true }));
                             setPromotionActiveSection('bigfive');
-                            navigateTo('expediente', 'promocion');
+                            navigateTo('expediente', 'promocion', undefined, 'sec-bigfive-promocion');
                           }}
                           className={`w-full text-left px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                             currentStage === 'expediente' && currentBlock === 'promocion' && promotionActiveSection === 'bigfive'
@@ -1219,9 +1277,14 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedCollabId === '__ALL__') handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            if (selectedCollabId === '__ALL__' || !selectedCollabId) {
+                              handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
+                            }
+                            setIsPerfilColaboradorOpen(true);
+                            setIsResultadosPromocionOpen(true);
+                            setOpenPhases(prev => ({ ...prev, fasePromocion: true }));
                             setPromotionActiveSection('impresion_pdf');
-                            navigateTo('expediente', 'promocion');
+                            navigateTo('expediente', 'promocion', undefined, 'sec-impresion-promocion');
                           }}
                           className={`w-full text-left px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer leading-tight ${
                             currentStage === 'expediente' && currentBlock === 'promocion' && promotionActiveSection === 'impresion_pdf'
@@ -1241,10 +1304,12 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                     <button
                       type="button"
                       onClick={() => {
-                        if (selectedCollabId === '__ALL__') {
+                        if (selectedCollabId === '__ALL__' || !selectedCollabId) {
                           handleSelectCollaborator(CANGURO_COLLABORATORS[0].info.id || 'emp-001');
                         }
-                        navigateTo('expediente', 'pdi');
+                        setIsPerfilColaboradorOpen(true);
+                        setOpenPhases(prev => ({ ...prev, fase3: true }));
+                        navigateTo('expediente', 'pdi', 'pdi', 'fase-pdi');
                       }}
                       className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-between cursor-pointer ${
                         currentStage === 'expediente' && currentBlock === 'pdi'
@@ -1614,6 +1679,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                 />
               ) : currentBlock === 'organizacional' ? (
                 <OrganizationalDashboard
+                  key={`org_dashboard_${orgDashboardSection}_${orgDashboardMode}`}
                   liveState={state}
                   onSelectCollaborator={(id) => {
                     handleSelectCollaborator(id);
@@ -2020,7 +2086,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
 
                         {/* 2. GRÁFICO DE ANÁLISIS DE BRECHA (GAP ANALYSIS GRAPH VS PUESTO SUPERIOR) */}
                         {(promotionActiveSection === 'brechas' || promotionActiveSection === 'all') && (
-                          <div className="w-full animate-in fade-in duration-200">
+                          <div id="sec-brechas-promocion" className="w-full animate-in fade-in duration-200 scroll-mt-20">
                             <CompetencyGapAnalysisChart
                               currentPosition={state.employeeInfo.position}
                               directorate={state.employeeInfo.directorate}
@@ -2043,7 +2109,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
 
                         {/* 3. MATRIZ 9-BOX DE DESEMPEÑO Y POTENCIAL (FILTRO DE ELEGIBILIDAD PARA PROMOCIÓN) */}
                         {(promotionActiveSection === 'ninebox_promocion' || promotionActiveSection === 'all') && (
-                          <div className="w-full animate-in fade-in duration-200">
+                          <div id="sec-ninebox-promocion" className="w-full animate-in fade-in duration-200 scroll-mt-20">
                             <NineBox
                               performanceScore={metrics.isEvaluated ? (metrics.finalScore || metrics.block1Score) : 0}
                               potentialScore={effectivePotentialScore}
@@ -2056,7 +2122,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
 
                         {/* 4. RESULTADOS DEL TEST BIG 5 (INVENTARIO PSICOMÉTRICO - LAS 5 DIMENSIONES) */}
                         {(promotionActiveSection === 'bigfive' || promotionActiveSection === 'all') && (
-                          <div className="w-full animate-in fade-in duration-200">
+                          <div id="sec-bigfive-promocion" className="w-full animate-in fade-in duration-200 scroll-mt-20">
                             <PsychometricDossierVisualizer
                               result={activeBigFiveResults}
                               candidateName={`${state.employeeInfo.firstName} ${state.employeeInfo.lastName}`}
@@ -2067,7 +2133,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
 
                         {/* 5. VISTA PREVIA E IMPRESIÓN PDF DE EXPEDIENTE FORMAL DE EVALUACIÓN */}
                         {(promotionActiveSection === 'impresion_pdf' || promotionActiveSection === 'all') && (
-                          <div className="space-y-6 animate-in fade-in duration-200">
+                          <div id="sec-impresion-promocion" className="space-y-6 animate-in fade-in duration-200 scroll-mt-20">
                             {/* Dictamen de Supervisión y PDI de Promoción */}
                             <div id="pdi-promocion-card" className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {/* Dictamen del Supervisor */}
@@ -2172,7 +2238,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                       {/* ========================================================================= */}
                       {(individualActiveSection === 'desempeno' || individualActiveSection === 'all') && (
                         <>
-                          <div id="fase-desempeno" className="border border-zinc-200/90 rounded-2xl bg-white shadow-xs overflow-hidden transition-all">
+                          <div id="fase-desempeno" className="border border-zinc-200/90 rounded-2xl bg-white shadow-xs overflow-hidden transition-all scroll-mt-20">
                         {/* Cabecera Desplegable Dinámica */}
                         <button
                           type="button"
@@ -2907,7 +2973,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                 {/* SECCIÓN 2: POTENCIAL Y LIDERAZGO (RADAR + TABLA PONDERACIÓN EJE Y)        */}
                 {/* ========================================================================= */}
                 {(individualActiveSection === 'potencial' || individualActiveSection === 'all') && (
-                  <div id="seccion-potencial" className="space-y-4 animate-in fade-in duration-200">
+                  <div id="seccion-potencial" className="space-y-4 animate-in fade-in duration-200 scroll-mt-20">
                     <PotentialLeadershipDashboard
                       scores={combinedScoresForPotential}
                       performanceScore={metrics.isEvaluated ? (metrics.finalScore || metrics.block1Score) : 0}
@@ -2956,7 +3022,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                 {/* SECCIÓN 3: MATRIZ NINE-BOX DE DESEMPEÑO Y POTENCIAL                       */}
                 {/* ========================================================================= */}
                 {(individualActiveSection === 'ninebox' || individualActiveSection === 'all') && (
-                  <div id="seccion-ninebox" className="space-y-4 animate-in fade-in duration-200">
+                  <div id="seccion-ninebox" className="space-y-4 animate-in fade-in duration-200 scroll-mt-20">
                     <div className="w-full">
                       <NineBox
                         performanceScore={metrics.isEvaluated ? (metrics.finalScore || metrics.block1Score) : 0}
@@ -3000,7 +3066,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                 {/* ========================================================================= */}
                 {(individualActiveSection === 'calibracion' || individualActiveSection === 'all') && (
                   <>
-                    <div id="fase-gauss" className="border border-zinc-200/90 rounded-2xl bg-white shadow-xs overflow-hidden transition-all">
+                    <div id="fase-gauss" className="border border-zinc-200/90 rounded-2xl bg-white shadow-xs overflow-hidden transition-all scroll-mt-20">
                     {/* Cabecera Desplegable Dinámica */}
                     <button
                       type="button"
@@ -3167,7 +3233,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                     const targetPos = activePromotionDossier.targetPosition || state.employeeInfo.targetPromotionPosition || 'Cargo Superior';
 
                     return (
-                      <div className="space-y-6 animate-in fade-in duration-200">
+                      <div id="fase-pdi" className="space-y-6 animate-in fade-in duration-200 scroll-mt-20">
                         {/* Cabecera contextual exclusiva */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl gap-2 shadow-2xs">
                           <div className="flex items-center gap-2 text-xs">

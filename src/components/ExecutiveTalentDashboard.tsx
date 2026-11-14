@@ -1149,7 +1149,7 @@ export function ExecutiveTalentDashboard({
   // Si se solicita exclusivamente la sección de Promedio por Cargo
   if (viewSection === 'promedios_cargo') {
     return (
-      <div className="space-y-6 animate-in fade-in duration-200">
+      <div id="sec-promedios-por-cargo" className="space-y-6 animate-in fade-in duration-200 scroll-mt-20">
         <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200">
             <div>
