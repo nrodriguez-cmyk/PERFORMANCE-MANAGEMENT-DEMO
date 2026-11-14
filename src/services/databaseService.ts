@@ -38,19 +38,19 @@ function getDirectSupabase(): SupabaseClient | null {
  * Consulta el estado de conexión de la base de datos
  */
 export async function checkDatabaseStatus(): Promise<DatabaseStatus> {
-  // 1. Intentar vía endpoint backend (/api/db/status o /api/status)
+  // 1. Intentar vía endpoint backend (/api/status o /api/db/status)
   try {
-    let res = await fetch('/api/db/status');
+    let res = await fetch('/api/status');
     if (!res.ok) {
-      res = await fetch('/api/status');
+      res = await fetch('/api/db/status');
     }
     if (res.ok) {
       const data: DatabaseStatus = await res.json();
-      if (data.connected) {
-        return data;
-      }
+      return data;
     }
   } catch (backendErr) {
+    console.warn('[DatabaseService] Backend status no disponible, intentando cliente directo:', backendErr);
+  }
     console.warn('[DatabaseService] Backend /api/db/status no disponible, intentando cliente directo:', backendErr);
   }
 
@@ -94,7 +94,8 @@ export async function checkDatabaseStatus(): Promise<DatabaseStatus> {
  */
 export async function initializeDatabaseTables(): Promise<{ success: boolean; message: string }> {
   try {
-    const res = await fetch('/api/db/init', { method: 'POST' });
+    let res = await fetch('/api/init', { method: 'POST' });
+    if (!res.ok) res = await fetch('/api/db/init', { method: 'POST' });
     const data = await res.json();
     return data;
   } catch (err: any) {
@@ -124,13 +125,21 @@ export async function syncCensusToDatabase(): Promise<{ success: boolean; count:
     analyticalAccount: ''
   }));
 
-  // 1. Intentar vía backend (/api/db/sync-census)
+  // 1. Intentar vía backend (/api/sync-census o /api/db/sync-census)
   try {
-    const res = await fetch('/api/db/sync-census', {
+    let res = await fetch('/api/sync-census', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ collaborators: payload })
     });
+
+    if (!res.ok) {
+      res = await fetch('/api/db/sync-census', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collaborators: payload })
+      });
+    }
 
     if (res.ok) {
       const data = await res.json();
