@@ -705,5 +705,10 @@ export type AdminNotification = {
   evaluationType?: string; // 'Autoevaluación' | 'Evaluación del Supervisor' | 'Evaluación de Pares' | 'Evaluación de Subordinados'
   evaluatedEmployeeName?: string;
   evaluatedEmployeePosition?: string;
+  type?: 'evaluation' | 'director_access_request';
+  requestStatus?: 'pending' | 'approved' | 'rejected';
+  directorName?: string;
+  directorPosition?: string;
+  directorate?: string;
 };
 

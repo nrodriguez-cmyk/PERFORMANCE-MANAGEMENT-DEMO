@@ -28,6 +28,7 @@ import { PsychometricDossierVisualizer } from './PsychometricDossierVisualizer';
 import { resolveOrCreatePromotionDossier } from '../utils/promotionDefaults';
 import { DatabaseStatusModal } from './DatabaseStatusModal';
 import { getCurrentSession, AuthenticatedUser, logoutSession, canConfigureEvaluations, canViewAllCompanyResults, canViewDirectionResults, isMasterAdministrator } from '../services/authService';
+import { updateDirectorPermissionStatus } from '../services/directorPermissionService';
 import { PerformanceEvaluationConfigView } from './PerformanceEvaluationConfigView';
 import { UserPasswordRecoveryModule } from './UserPasswordRecoveryModule';
 import {
@@ -491,18 +492,6 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
 
           {/* Right User & Navigation Controls */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Database Service Status Button - Exclusivo Administrador */}
-            {isAdmin && (
-              <button
-                onClick={() => setShowDbModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-[#F1B400]/40 hover:border-[#F1B400] hover:bg-zinc-850 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                title="Carga Masiva de Colaboradores (Plantilla Excel y Sincronización con Supabase)"
-              >
-                <FileSpreadsheet size={15} className="text-[#F1B400] shrink-0" />
-                <span className="text-[11px] font-mono font-bold">Carga Masiva Excel</span>
-              </button>
-            )}
-
             {/* Acceso Rápido: Recuperación de Claves (Usuario Maestro / Admin) */}
             {isAdmin && (
               <button
@@ -568,6 +557,92 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                       </div>
                     ) : (
                       (state.notifications || []).map((n, i) => {
+                        // Solicitudes especiales de Directores para acceso individual
+                        if (n.type === 'director_access_request') {
+                          return (
+                            <div 
+                              key={n.id || i} 
+                              className={`p-3.5 transition-colors ${!n.read ? 'bg-amber-50/80 border-l-4 border-l-[#F1B400]' : 'bg-white hover:bg-zinc-50'}`}
+                            >
+                              <div className="flex gap-2.5 items-start">
+                                <div className="mt-0.5 p-1 rounded-full bg-[#F1B400] text-black shrink-0 shadow-2xs">
+                                  <KeyRound size={14} />
+                                </div>
+                                <div className="flex-1 space-y-1.5 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase tracking-wider bg-zinc-950 text-[#F1B400] border-zinc-800">
+                                      Solicitud de Acceso Directores
+                                    </span>
+                                    <span className="text-[10px] text-zinc-400 font-mono shrink-0">
+                                      {new Date(n.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                    </span>
+                                  </div>
+
+                                  <div className="text-xs text-zinc-900 leading-snug">
+                                    <span className="text-zinc-500 font-medium">Solicitante: </span>
+                                    <strong className="text-zinc-950 font-bold">{n.directorName || n.evaluatorName}</strong>
+                                    <span className="text-zinc-600 font-medium text-[11px] ml-1">
+                                      ({n.directorPosition || n.evaluatorPosition})
+                                    </span>
+                                  </div>
+
+                                  <div className="text-[11px] text-zinc-600">
+                                    <span className="text-zinc-500">Dirección: </span>
+                                    <span className="font-semibold text-zinc-900">{n.directorate}</span>
+                                  </div>
+
+                                  <p className="text-[11px] text-zinc-600 bg-white/90 p-1.5 rounded border border-zinc-200/80">
+                                    {n.message}
+                                  </p>
+
+                                  {/* Acciones para el Administrador */}
+                                  <div className="pt-1.5 flex items-center gap-2">
+                                    {n.requestStatus === 'approved' ? (
+                                      <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-bold flex items-center gap-1">
+                                        <CheckCircle size={12} className="text-emerald-600" />
+                                        Acceso Aprobado por Administrador
+                                      </span>
+                                    ) : n.requestStatus === 'rejected' ? (
+                                      <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 border border-rose-300 text-[10px] font-bold">
+                                        Acceso Denegado
+                                      </span>
+                                    ) : (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            updateDirectorPermissionStatus(n.directorate || '', 'approved', currentUser?.fullName || 'Administrador Maestro');
+                                            const updated = (state.notifications || []).map((item, idx) =>
+                                              idx === i ? { ...item, requestStatus: 'approved' as const, read: true } : item
+                                            );
+                                            onUpdateState({ ...state, notifications: updated });
+                                          }}
+                                          className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors shadow-xs cursor-pointer"
+                                        >
+                                          Aprobar Acceso
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            updateDirectorPermissionStatus(n.directorate || '', 'rejected', currentUser?.fullName || 'Administrador Maestro');
+                                            const updated = (state.notifications || []).map((item, idx) =>
+                                              idx === i ? { ...item, requestStatus: 'rejected' as const, read: true } : item
+                                            );
+                                            onUpdateState({ ...state, notifications: updated });
+                                          }}
+                                          className="px-2.5 py-1 rounded-lg bg-zinc-200 hover:bg-zinc-300 text-zinc-800 font-bold text-[11px] transition-colors cursor-pointer"
+                                        >
+                                          Denegar
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         // Determinar tipo de evaluación
                         const msgLower = (n.message || '').toLowerCase();
                         const evalType = n.evaluationType || (
@@ -1291,6 +1366,27 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                   MAESTRO
                 </span>
               </button>
+
+              {/* CARGA MASIVA DE COLABORADORES (EXCEL) - JUSTO DEBAJO DE RECUPERACIÓN DE CLAVES */}
+              <button
+                type="button"
+                onClick={() => setShowDbModal(true)}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border bg-zinc-900 border-zinc-800 text-white hover:border-[#F1B400] hover:bg-zinc-850 mt-1.5 shadow-xs"
+                title="Carga Masiva de Colaboradores (Plantilla Excel y Sincronización con Supabase)"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-zinc-800 text-[#F1B400] shadow-2xs">
+                    <FileSpreadsheet size={14} className="stroke-[2.5]" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="leading-tight font-black text-[11px]">CARGA MASIVA EXCEL</span>
+                    <span className="text-[9.5px] font-medium text-zinc-400">Plantilla y Censo Masivo</span>
+                  </div>
+                </div>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#F1B400] text-black font-black shadow-2xs">
+                  EXCEL
+                </span>
+              </button>
             </div>
           </nav>
 
@@ -1337,6 +1433,7 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
               collaboratorCount={CANGURO_COLLABORATORS.length}
               currentUser={currentUser}
               onOpenDatabaseModal={() => setShowDbModal(true)}
+              onAddNotification={(notif) => onUpdateState({ ...state, notifications: [notif, ...(state.notifications || [])] })}
             />
           )}
 

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   Settings, Activity, Users, FileCheck, Star, ChevronRight, GraduationCap, Sparkles, Sliders,
-  User, ShieldCheck, Briefcase, LayoutGrid, Eye, KeyRound, FileSpreadsheet
+  User, ShieldCheck, Briefcase, LayoutGrid, Eye, KeyRound, FileSpreadsheet, BarChart3
 } from 'lucide-react';
 import { CANGURO_COLLABORATORS } from '../data/canguroUniverso';
 import { getCurrentSession, AuthenticatedUser, isMasterAdministrator } from '../services/authService';
 import { CollaboratorEvaluationQuadrants } from './CollaboratorEvaluationQuadrants';
+import { DirectorExecutiveReport } from './DirectorExecutiveReport';
 
 interface EvaluationHubHomeProps {
   onNavigate: (stage: 'config' | 'config_desempeno' | 'config_promocion' | 'recuperacion_clave' | 'links' | 'expediente' | 'audit', block?: 'organizacional' | 'dashboard_promociones' | 'banco_sucesores' | 'people_analytics_educacion' | 'resumen' | 'promocion' | 'calibracion' | 'pdi' | 'evaluaciones' | 'sucesion') => void;
@@ -14,6 +15,7 @@ interface EvaluationHubHomeProps {
   currentUser?: AuthenticatedUser | null;
   onOpenEvaluation?: (role: 'self' | 'supervisor' | 'peer' | 'subordinate') => void;
   onOpenDatabaseModal?: () => void;
+  onAddNotification?: (notif: any) => void;
 }
 
 export function EvaluationHubHome({
@@ -21,7 +23,8 @@ export function EvaluationHubHome({
   onSelectCollaborator,
   currentUser: propUser,
   onOpenEvaluation,
-  onOpenDatabaseModal
+  onOpenDatabaseModal,
+  onAddNotification
 }: EvaluationHubHomeProps) {
   const activeUser = propUser || getCurrentSession();
   const isMaster = isMasterAdministrator(activeUser);
@@ -30,6 +33,9 @@ export function EvaluationHubHome({
   // For administrators, allow toggling between administrative modules and collaborator quadrants view
   const [adminViewMode, setAdminViewMode] = useState<'admin_modules' | 'cuadrantes_colaborador'>('admin_modules');
   const [previewCollabId, setPreviewCollabId] = useState<string>(activeUser?.collaboratorId || CANGURO_COLLABORATORS[0]?.info.id || 'emp-001');
+
+  // Tab para usuarios Directores: alternar entre Informe Ejecutivo de Dirección y Cuadrantes Personales
+  const [directorTab, setDirectorTab] = useState<'informe_direccion' | 'mi_evaluacion'>('informe_direccion');
 
   // Live calculation of collaborator and evaluation metrics
   const totalCollaborators = CANGURO_COLLABORATORS.length;
@@ -46,9 +52,72 @@ export function EvaluationHubHome({
   const effectiveDir = !isAdmin && activeUser ? activeUser.directorate : previewCollab.info.directorate;
 
   // =========================================================================
-  // SI EL USUARIO NO ES ADMINISTRADOR: RENDERIZAR ÚNICAMENTE LOS CUADRANTES
+  // SI EL USUARIO NO ES ADMINISTRADOR
   // =========================================================================
   if (!isAdmin) {
+    const isDirector = activeUser?.role === 'director' || (activeUser?.position || '').toLowerCase().includes('director');
+
+    // VISTA EXCLUSIVA PARA DIRECTORES: INFORME EJECUTIVO + CAMPANA DE GAUSS + CUADRANTES
+    if (isDirector && activeUser) {
+      return (
+        <div className="space-y-4">
+          {/* Selector de pestañas para el Director */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-2 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setDirectorTab('informe_direccion')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  directorTab === 'informe_direccion'
+                    ? 'bg-zinc-950 text-white shadow-xs'
+                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
+                }`}
+              >
+                <BarChart3 size={15} className={directorTab === 'informe_direccion' ? 'text-[#F1B400]' : 'text-zinc-400'} />
+                <span>Informe de Dirección (Campana de Gauss y Promedios)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDirectorTab('mi_evaluacion')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  directorTab === 'mi_evaluacion'
+                    ? 'bg-zinc-950 text-white shadow-xs'
+                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
+                }`}
+              >
+                <Users size={15} className={directorTab === 'mi_evaluacion' ? 'text-[#F1B400]' : 'text-zinc-400'} />
+                <span>Mi Evaluación y Equipo</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto px-3 py-1 bg-amber-50 border border-amber-200 rounded-xl text-[11px] font-mono font-bold text-amber-950">
+              <span className="truncate max-w-[220px]">{activeUser.directorate}</span>
+            </div>
+          </div>
+
+          {/* Contenido según pestaña activa */}
+          {directorTab === 'informe_direccion' ? (
+            <DirectorExecutiveReport
+              currentUser={activeUser}
+              onSelectCollaborator={onSelectCollaborator}
+              onAddNotification={onAddNotification}
+            />
+          ) : (
+            <CollaboratorEvaluationQuadrants
+              collaboratorName={effectiveCollabName}
+              position={effectivePosition}
+              idNumber={effectiveIdNumber}
+              department={effectiveDept}
+              directorate={effectiveDir}
+              isSupervisorOrLeader={true}
+              onOpenEvaluation={onOpenEvaluation}
+            />
+          )}
+        </div>
+      );
+    }
+
     return (
       <CollaboratorEvaluationQuadrants
         collaboratorName={effectiveCollabName}
@@ -56,7 +125,7 @@ export function EvaluationHubHome({
         idNumber={effectiveIdNumber}
         department={effectiveDept}
         directorate={effectiveDir}
-        isSupervisorOrLeader={activeUser?.role === 'supervisor' || activeUser?.role === 'director'}
+        isSupervisorOrLeader={activeUser?.role === 'supervisor'}
         onOpenEvaluation={onOpenEvaluation}
       />
     );
