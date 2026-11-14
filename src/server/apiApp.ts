@@ -301,7 +301,7 @@ El postulante demuestra un 94.6% de consistencia entre sus competencias observad
 });
 
 // 4. Autenticación de Usuario (Supabase / Postgres)
-apiRouter.post('/auth/login', async (req, res) => {
+apiRouter.post(['/auth/login', '/login'], async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
@@ -315,7 +315,7 @@ apiRouter.post('/auth/login', async (req, res) => {
 });
 
 // 5. Estado de Conexión a Base de Datos
-apiRouter.get('/db/status', async (_req, res) => {
+apiRouter.get(['/db/status', '/status'], async (_req, res) => {
   try {
     const status = await testConnection();
     return res.json(status);
@@ -325,7 +325,7 @@ apiRouter.get('/db/status', async (_req, res) => {
 });
 
 // 6. Inicialización de Tablas
-apiRouter.post('/db/init', async (_req, res) => {
+apiRouter.post(['/db/init', '/init'], async (_req, res) => {
   try {
     const result = await initTables();
     return res.json(result);
@@ -335,7 +335,7 @@ apiRouter.post('/db/init', async (_req, res) => {
 });
 
 // 7. Sincronización Masiva de Colaboradores (Censo / Excel)
-apiRouter.post('/db/sync-census', async (req, res) => {
+apiRouter.post(['/db/sync-census', '/sync-census'], async (req, res) => {
   try {
     const { collaborators } = req.body;
     if (!Array.isArray(collaborators) || collaborators.length === 0) {
@@ -349,7 +349,7 @@ apiRouter.post('/db/sync-census', async (req, res) => {
 });
 
 // 8. Sincronización de Cargos
-apiRouter.post('/db/sync-positions', async (req, res) => {
+apiRouter.post(['/db/sync-positions', '/sync-positions'], async (req, res) => {
   try {
     const { positions } = req.body;
     if (!Array.isArray(positions) || positions.length === 0) {
@@ -363,7 +363,7 @@ apiRouter.post('/db/sync-positions', async (req, res) => {
 });
 
 // 9. Evaluaciones
-apiRouter.post('/db/evaluations', async (req, res) => {
+apiRouter.post(['/db/evaluations', '/evaluations'], async (req, res) => {
   try {
     const result = await saveEvaluation(req.body);
     return res.json(result);
@@ -372,7 +372,7 @@ apiRouter.post('/db/evaluations', async (req, res) => {
   }
 });
 
-apiRouter.get('/db/evaluations/:collaboratorId', async (req, res) => {
+apiRouter.get(['/db/evaluations/:collaboratorId', '/evaluations/:collaboratorId'], async (req, res) => {
   try {
     const evaluations = await getEvaluationsByCollaborator(req.params.collaboratorId);
     return res.json({ success: true, evaluations });
@@ -382,7 +382,7 @@ apiRouter.get('/db/evaluations/:collaboratorId', async (req, res) => {
 });
 
 // 10. PDI (Planes de Desarrollo Individual)
-apiRouter.post('/db/pdi', async (req, res) => {
+apiRouter.post(['/db/pdi', '/pdi'], async (req, res) => {
   try {
     const result = await savePdi(req.body);
     return res.json(result);
@@ -391,7 +391,7 @@ apiRouter.post('/db/pdi', async (req, res) => {
   }
 });
 
-apiRouter.get('/db/pdi/:collaboratorId', async (req, res) => {
+apiRouter.get(['/db/pdi/:collaboratorId', '/pdi/:collaboratorId'], async (req, res) => {
   try {
     const pdi = await getPdiByCollaborator(req.params.collaboratorId);
     return res.json({ success: true, pdi });

@@ -899,7 +899,7 @@ El postulante demuestra un 94.6% de consistencia entre sus competencias observad
     verdict: (interviewScore || 4.5) >= 4.5 ? "Altamente Id\xF3neo / Prioritario" : "Elegible / Apto"
   });
 });
-apiRouter.post("/auth/login", async (req, res) => {
+apiRouter.post(["/auth/login", "/login"], async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
@@ -911,7 +911,7 @@ apiRouter.post("/auth/login", async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
-apiRouter.get("/db/status", async (_req, res) => {
+apiRouter.get(["/db/status", "/status"], async (_req, res) => {
   try {
     const status = await testConnection();
     return res.json(status);
@@ -919,7 +919,7 @@ apiRouter.get("/db/status", async (_req, res) => {
     return res.status(500).json({ connected: false, message: err.message });
   }
 });
-apiRouter.post("/db/init", async (_req, res) => {
+apiRouter.post(["/db/init", "/init"], async (_req, res) => {
   try {
     const result = await initTables();
     return res.json(result);
@@ -927,7 +927,7 @@ apiRouter.post("/db/init", async (_req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
-apiRouter.post("/db/sync-census", async (req, res) => {
+apiRouter.post(["/db/sync-census", "/sync-census"], async (req, res) => {
   try {
     const { collaborators } = req.body;
     if (!Array.isArray(collaborators) || collaborators.length === 0) {
@@ -939,7 +939,7 @@ apiRouter.post("/db/sync-census", async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
-apiRouter.post("/db/sync-positions", async (req, res) => {
+apiRouter.post(["/db/sync-positions", "/sync-positions"], async (req, res) => {
   try {
     const { positions } = req.body;
     if (!Array.isArray(positions) || positions.length === 0) {
@@ -951,7 +951,7 @@ apiRouter.post("/db/sync-positions", async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
-apiRouter.post("/db/evaluations", async (req, res) => {
+apiRouter.post(["/db/evaluations", "/evaluations"], async (req, res) => {
   try {
     const result = await saveEvaluation(req.body);
     return res.json(result);
@@ -959,7 +959,7 @@ apiRouter.post("/db/evaluations", async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
-apiRouter.get("/db/evaluations/:collaboratorId", async (req, res) => {
+apiRouter.get(["/db/evaluations/:collaboratorId", "/evaluations/:collaboratorId"], async (req, res) => {
   try {
     const evaluations = await getEvaluationsByCollaborator(req.params.collaboratorId);
     return res.json({ success: true, evaluations });
@@ -967,7 +967,7 @@ apiRouter.get("/db/evaluations/:collaboratorId", async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
-apiRouter.post("/db/pdi", async (req, res) => {
+apiRouter.post(["/db/pdi", "/pdi"], async (req, res) => {
   try {
     const result = await savePdi(req.body);
     return res.json(result);
@@ -975,7 +975,7 @@ apiRouter.post("/db/pdi", async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
-apiRouter.get("/db/pdi/:collaboratorId", async (req, res) => {
+apiRouter.get(["/db/pdi/:collaboratorId", "/pdi/:collaboratorId"], async (req, res) => {
   try {
     const pdi = await getPdiByCollaborator(req.params.collaboratorId);
     return res.json({ success: true, pdi });
