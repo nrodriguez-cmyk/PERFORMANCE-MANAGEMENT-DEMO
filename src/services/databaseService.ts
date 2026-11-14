@@ -38,20 +38,24 @@ function getDirectSupabase(): SupabaseClient | null {
  * Consulta el estado de conexión de la base de datos
  */
 export async function checkDatabaseStatus(): Promise<DatabaseStatus> {
-  // 1. Intentar vía endpoint backend (/api/status o /api/db/status)
-  try {
-    let res = await fetch('/api/status');
-    if (!res.ok) {
-      res = await fetch('/api/db/status');
-    }
-    if (res.ok) {
-      const data: DatabaseStatus = await res.json();
-      return data;
-    }
-  } catch (backendErr) {
-    console.warn('[DatabaseService] Backend status no disponible, intentando cliente directo:', backendErr);
-  }
-    console.warn('[DatabaseService] Backend /api/db/status no disponible, intentando cliente directo:', backendErr);
+  // 1. Consultar endpoint verificado /api/ping (o fallbacks)
+  const endpoints = ['/api/ping', '/api/status', '/api/db/status'];
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.connected !== undefined || data.pong)) {
+          return {
+            connected: !!data.connected,
+            provider: data.provider || (data.hasSupabaseUrl ? 'supabase' : 'none'),
+            totalCollaborators: data.totalCollaborators || 0,
+            totalEvaluations: data.totalEvaluations || 0,
+            message: data.message || 'Conexión activa con Supabase.'
+          };
+        }
+      }
+    } catch {}
   }
 
   // 2. Fallback de cliente directo Supabase si están las variables VITE_*
@@ -125,29 +129,32 @@ export async function syncCensusToDatabase(): Promise<{ success: boolean; count:
     analyticalAccount: ''
   }));
 
-  // 1. Intentar vía backend (/api/sync-census o /api/db/sync-census)
+  // 1. Intentar vía backend (/api/ping con action: sync-census, o /api/sync-census)
   try {
-    let res = await fetch('/api/sync-census', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ collaborators: payload })
-    });
+    const endpoints = [
+      { url: '/api/ping', body: { action: 'sync-census', collaborators: payload } },
+      { url: '/api/sync-census', body: { collaborators: payload } },
+      { url: '/api/db/sync-census', body: { collaborators: payload } }
+    ];
 
-    if (!res.ok) {
-      res = await fetch('/api/db/sync-census', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collaborators: payload })
-      });
-    }
-
-    if (res.ok) {
-      const data = await res.json();
-      return {
-        success: data.success,
-        count: data.insertedOrUpdated || 0,
-        message: data.message
-      };
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(ep.body)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) {
+            return {
+              success: true,
+              count: data.insertedOrUpdated || data.count || payload.length,
+              message: data.message || `Sincronizados ${payload.length} colaboradores con éxito.`
+            };
+          }
+        }
+      } catch {}
     }
   } catch (err: any) {
     console.warn('[DatabaseService] Backend sync falló, intentando cliente directo:', err.message);
