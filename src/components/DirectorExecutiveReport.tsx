@@ -12,6 +12,7 @@ import {
   normalizeDirectorateKey
 } from '../services/directorPermissionService';
 import { MERIT_TIERS, MeritTier } from '../types';
+import { StandardGaussCurve } from './StandardGaussCurve';
 
 const OFFICIAL_DIRECTORATES = [
   'Dirección de Administración y Finanzas',
@@ -261,41 +262,6 @@ export function DirectorExecutiveReport({
     );
   }, [metrics.details, searchTerm]);
 
-  // Dimensiones SVG para Campana de Gauss
-  const svgWidth = 860;
-  const svgHeight = 260;
-  const paddingX = 40;
-  const plotWidth = svgWidth - (paddingX * 2);
-  const baselineY = 190;
-  const peakY = 40;
-  const curveHeight = baselineY - peakY;
-
-  const toSvgX = (t: number) => paddingX + t * plotWidth;
-  const gaussianDensity = (t: number) => {
-    const mean = 0.515;
-    const sigma = 0.175;
-    const z = (t - mean) / sigma;
-    return Math.exp(-0.5 * z * z);
-  };
-  const getGaussianY = (t: number) => baselineY - gaussianDensity(t) * curveHeight;
-
-  // Puntos continuos de la curva
-  const curvePoints: { t: number; x: number; y: number }[] = [];
-  const steps = 100;
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    curvePoints.push({ t, x: toSvgX(t), y: getGaussianY(t) });
-  }
-
-  const curvePath = curvePoints.reduce((acc, p, idx) => {
-    return idx === 0 ? `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}` : `${acc} L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
-  }, '');
-
-  // Pin de la media de la Dirección
-  const dirMeanT = Math.max(0.05, Math.min(0.95, (metrics.avgScore - 1.0) / 4.0));
-  const dirPinX = toSvgX(dirMeanT);
-  const dirPinY = getGaussianY(dirMeanT);
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* 1. CABECERA INSTITUCIONAL EJECUTIVA */}
@@ -538,76 +504,27 @@ export function DirectorExecutiveReport({
 
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-zinc-900 text-[#F1B400] font-black">
-              Media Dirección: {metrics.avgScore} pts
+              Media Dirección: {metrics.avgScore.toFixed(2)} pts ({Math.round((metrics.avgScore / 5) * 100)}%)
             </span>
           </div>
         </div>
 
-        {/* Lienzo SVG de la Campana de Gauss */}
-        <div className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-6 overflow-x-auto">
-          <div className="min-w-[700px] flex justify-center">
-            <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto select-none">
-              <defs>
-                <linearGradient id="dir-gauss-t1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#EF4444" stopOpacity="0.05" />
-                </linearGradient>
-                <linearGradient id="dir-gauss-t2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.05" />
-                </linearGradient>
-                <linearGradient id="dir-gauss-t3" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.05" />
-                </linearGradient>
-                <linearGradient id="dir-gauss-t4" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.05" />
-                </linearGradient>
-                <linearGradient id="dir-gauss-t5" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.05" />
-                </linearGradient>
-              </defs>
-
-              {/* Línea base */}
-              <line x1={paddingX} y1={baselineY} x2={svgWidth - paddingX} y2={baselineY} stroke="#3f3f46" strokeWidth="2" />
-
-              {/* Trazado de la Campana de Gauss */}
-              <path d={curvePath} fill="none" stroke="#F1B400" strokeWidth="3" />
-
-              {/* Pin de la Media de la Dirección */}
-              <line x1={dirPinX} y1={baselineY} x2={dirPinX} y2={dirPinY} stroke="#F1B400" strokeWidth="2" strokeDasharray="3 3" />
-              <circle cx={dirPinX} cy={dirPinY} r="7" fill="#F1B400" stroke="#000" strokeWidth="2" />
-              
-              {/* Callout Directivo */}
-              <g transform={`translate(${Math.min(dirPinX - 60, svgWidth - 160)}, ${Math.max(15, dirPinY - 32)})`}>
-                <rect width="130" height="26" rx="6" fill="#F1B400" />
-                <text x="65" y="17" fill="#000" fontSize="11" fontWeight="900" textAnchor="middle" fontFamily="monospace">
-                  Media: {metrics.avgScore} pts
-                </text>
-              </g>
-
-              {/* Etiquetas de tramos de Gauss */}
-              <g transform={`translate(0, ${baselineY + 24})`}>
-                <text x={toSvgX(0.09)} y="0" fill="#f87171" fontSize="10" fontWeight="bold" textAnchor="middle">Insatisfactorio</text>
-                <text x={toSvgX(0.09)} y="15" fill="#71717a" fontSize="9" textAnchor="middle">Meta: 5%</text>
-
-                <text x={toSvgX(0.28)} y="0" fill="#fbbf24" fontSize="10" fontWeight="bold" textAnchor="middle">En Desarrollo</text>
-                <text x={toSvgX(0.28)} y="15" fill="#71717a" fontSize="9" textAnchor="middle">Meta: 20%</text>
-
-                <text x={toSvgX(0.515)} y="0" fill="#34d399" fontSize="10" fontWeight="bold" textAnchor="middle">Esperado</text>
-                <text x={toSvgX(0.515)} y="15" fill="#71717a" fontSize="9" textAnchor="middle">Meta: 50%</text>
-
-                <text x={toSvgX(0.745)} y="0" fill="#60a5fa" fontSize="10" fontWeight="bold" textAnchor="middle">Sobresaliente</text>
-                <text x={toSvgX(0.745)} y="15" fill="#71717a" fontSize="9" textAnchor="middle">Meta: 20%</text>
-
-                <text x={toSvgX(0.92)} y="0" fill="#c084fc" fontSize="10" fontWeight="bold" textAnchor="middle">Excepcional</text>
-                <text x={toSvgX(0.92)} y="15" fill="#71717a" fontSize="9" textAnchor="middle">Meta: 5%</text>
-              </g>
-            </svg>
-          </div>
-        </div>
+        {/* Curva de Distribución Normal Institucional Estandarizada */}
+        <StandardGaussCurve
+          pins={[
+            {
+              score: metrics.avgScore,
+              label: 'Media de la Dirección',
+              sublabel: `${metrics.avgScore.toFixed(2)} pts (${Math.round((metrics.avgScore / 5) * 100)}%)`,
+              color: '#F1B400',
+              isPrimary: true
+            }
+          ]}
+          tierCounts={metrics.tierCounts}
+          totalCount={populationCount}
+          highlightedTierId={metrics.avgTierId}
+          showCards={true}
+        />
 
         {/* Tabla Comparativa de Distribución de la Dirección */}
         <div className="overflow-x-auto">
