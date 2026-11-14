@@ -38,9 +38,12 @@ function getDirectSupabase(): SupabaseClient | null {
  * Consulta el estado de conexión de la base de datos
  */
 export async function checkDatabaseStatus(): Promise<DatabaseStatus> {
-  // 1. Intentar vía endpoint backend (/api/db/status)
+  // 1. Intentar vía endpoint backend (/api/db/status o /api/status)
   try {
-    const res = await fetch('/api/db/status');
+    let res = await fetch('/api/db/status');
+    if (!res.ok) {
+      res = await fetch('/api/status');
+    }
     if (res.ok) {
       const data: DatabaseStatus = await res.json();
       if (data.connected) {

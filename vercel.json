@@ -4,6 +4,15 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
+    { "source": "/api/db/status", "destination": "/api/status.js" },
+    { "source": "/api/db/init", "destination": "/api/init.js" },
+    { "source": "/api/db/sync-census", "destination": "/api/sync-census.js" },
+    { "source": "/api/db/sync-positions", "destination": "/api/sync-positions.js" },
+    { "source": "/api/db/evaluations/(.*)", "destination": "/api/evaluations.js" },
+    { "source": "/api/db/evaluations", "destination": "/api/evaluations.js" },
+    { "source": "/api/db/pdi/(.*)", "destination": "/api/pdi.js" },
+    { "source": "/api/db/pdi", "destination": "/api/pdi.js" },
+    { "source": "/api/auth/login", "destination": "/api/login.js" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [
