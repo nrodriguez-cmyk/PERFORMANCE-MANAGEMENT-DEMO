@@ -105,11 +105,11 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-zinc-950 text-zinc-100 flex flex-col justify-between font-sans selection:bg-[#F1B400] selection:text-black">
+    <div className="min-h-screen w-full bg-slate-50 text-zinc-900 flex flex-col justify-between font-sans selection:bg-[#F1B400] selection:text-black">
       {/* Top Banner */}
-      <header className="w-full bg-black/80 backdrop-blur-md border-b-2 border-[#F1B400] px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="w-full bg-white border-b-2 border-[#F1B400] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
-          <h1 className="text-sm sm:text-base font-black tracking-wider uppercase text-white font-mono">
+          <h1 className="text-sm sm:text-base font-black tracking-wider uppercase text-zinc-900 font-mono">
             Plataforma Oficial de Evaluaciones
           </h1>
         </div>
@@ -117,19 +117,19 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
       {/* Main Login Card */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-6">
-        <div className="w-full max-w-lg bg-zinc-900/90 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl">
+        <div className="w-full max-w-lg bg-white border border-zinc-200 rounded-3xl shadow-xl overflow-hidden">
           {/* Card Top Gold Bar */}
-          <div className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 p-6 sm:p-8 text-center border-b border-zinc-800 relative">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-[#F1B400] text-black font-black flex items-center justify-center text-2xl shadow-lg shadow-[#F1B400]/20 mb-3.5">
+          <div className="bg-gradient-to-b from-amber-50/60 via-white to-white p-6 sm:p-8 text-center border-b border-zinc-100 relative">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-[#F1B400] text-black font-black flex items-center justify-center text-2xl shadow-lg shadow-amber-400/20 mb-3.5">
               <KeyRound size={32} />
             </div>
-            <h2 className="text-lg sm:text-xl font-black uppercase tracking-wider text-white font-mono">
+            <h2 className="text-lg sm:text-xl font-black uppercase tracking-wider text-zinc-900 font-mono">
               Gestión del Desempeño
             </h2>
-            <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto leading-relaxed">
               Plataforma Oficial de Evaluaciones.
             </p>
-            <div className="inline-block mt-3 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-[10.5px] font-mono font-bold text-[#F1B400] uppercase tracking-wide">
+            <div className="inline-block mt-3 px-3.5 py-1 bg-amber-50 border border-amber-300 rounded-full text-[10.5px] font-mono font-bold text-amber-900 uppercase tracking-wide">
               Autenticación Requerida
             </div>
           </div>
@@ -138,8 +138,8 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <div className="p-6 sm:p-8 space-y-5">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-mono font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                  <UserCircle size={15} className="text-[#F1B400]" />
+                <label className="block text-xs font-mono font-bold text-zinc-700 mb-1.5 flex items-center gap-1.5">
+                  <UserCircle size={15} className="text-[#D99C00]" />
                   Usuario (Número de Identificación / Cédula):
                 </label>
                 <input
@@ -149,13 +149,13 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   placeholder="Ej: 12345678"
                   value={cedula}
                   onChange={(e) => setCedula(e.target.value)}
-                  className="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-xl font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#F1B400] transition-all"
+                  className="w-full p-3 bg-zinc-50 hover:bg-white focus:bg-white border border-zinc-300 focus:border-[#F1B400] rounded-xl font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#F1B400]/40 transition-all shadow-2xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                  <Lock size={15} className="text-[#F1B400]" />
+                <label className="block text-xs font-mono font-bold text-zinc-700 mb-1.5 flex items-center gap-1.5">
+                  <Lock size={15} className="text-[#D99C00]" />
                   Contraseña:
                 </label>
                 <input
@@ -164,20 +164,20 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   placeholder="Ingrese su contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-xl font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#F1B400] transition-all"
+                  className="w-full p-3 bg-zinc-50 hover:bg-white focus:bg-white border border-zinc-300 focus:border-[#F1B400] rounded-xl font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#F1B400]/40 transition-all shadow-2xs"
                 />
               </div>
 
               {error && (
-                <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-mono flex items-center gap-2.5 animate-in fade-in duration-200">
-                  <AlertCircle size={16} className="text-red-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-mono flex items-center gap-2.5 animate-in fade-in duration-200">
+                  <AlertCircle size={16} className="text-rose-600 shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
               {successMsg && (
-                <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center gap-2.5 animate-in fade-in duration-200">
-                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-850 text-xs font-mono flex items-center gap-2.5 animate-in fade-in duration-200">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
                   <span>{successMsg}</span>
                 </div>
               )}
@@ -185,7 +185,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               <button
                 type="submit"
                 disabled={loading || !cedula.trim() || !password.trim()}
-                className="w-full py-3.5 px-4 rounded-xl text-xs sm:text-sm font-black font-mono uppercase tracking-wider bg-[#F1B400] hover:bg-[#d99c00] active:scale-[0.99] text-black shadow-lg shadow-[#F1B400]/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full py-3.5 px-4 rounded-xl text-xs sm:text-sm font-black font-mono uppercase tracking-wider bg-[#F1B400] hover:bg-[#e0a600] active:scale-[0.99] text-black shadow-lg shadow-amber-400/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
               >
                 <span>{loading ? 'Verificando Colaborador...' : 'Ingresar al Sistema'}</span>
                 <ArrowRight size={16} />
@@ -197,21 +197,21 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
       {/* Modal Obligatorio de Cambio de Contraseña en Primer Ingreso */}
       {showPasswordChangeModal && pendingUser && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border-2 border-[#F1B400] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white border-2 border-[#F1B400] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header del Modal */}
-            <div className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 p-6 border-b border-zinc-800 text-center relative">
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-[#F1B400] text-black font-black flex items-center justify-center shadow-lg shadow-[#F1B400]/20 mb-3">
+            <div className="bg-gradient-to-b from-amber-50 via-white to-white p-6 border-b border-zinc-100 text-center relative">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-[#F1B400] text-black font-black flex items-center justify-center shadow-md shadow-amber-400/20 mb-3">
                 <KeyRound size={28} />
               </div>
-              <span className="text-[10px] font-mono font-bold tracking-widest text-[#F1B400] uppercase block">
+              <span className="text-[10px] font-mono font-bold tracking-widest text-[#B38300] uppercase block">
                 Primer Ingreso al Sistema • Seguridad Institucional
               </span>
-              <h3 className="text-lg font-black uppercase text-white font-mono mt-1">
+              <h3 className="text-lg font-black uppercase text-zinc-900 font-mono mt-1">
                 Cambio Obligatorio de Contraseña
               </h3>
-              <p className="text-xs text-zinc-300 mt-1 max-w-md mx-auto">
-                Bienvenido(a), <strong className="text-white">{pendingUser.fullName}</strong> ({pendingUser.position}).
+              <p className="text-xs text-zinc-600 mt-1 max-w-md mx-auto">
+                Bienvenido(a), <strong className="text-zinc-950">{pendingUser.fullName}</strong> ({pendingUser.position}).
                 Por seguridad institucional, debe definir una <strong>contraseña personalizada y única</strong> para sus próximos inicios de sesión.
               </p>
             </div>
@@ -219,19 +219,19 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             {/* Contenido del Formulario */}
             <form onSubmit={handleSaveNewPassword} className="p-6 space-y-4">
               {/* Información del usuario */}
-              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between text-xs font-mono">
-                <span className="text-zinc-400">Usuario Asignado (Cédula):</span>
-                <span className="font-bold text-[#F1B400]">{pendingUser.username}</span>
+              <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl flex items-center justify-between text-xs font-mono">
+                <span className="text-zinc-500">Usuario Asignado (Cédula):</span>
+                <span className="font-bold text-[#9E7400]">{pendingUser.username}</span>
               </div>
 
               {/* Campo: Nueva Contraseña */}
               <div>
-                <label className="block text-xs font-mono font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
+                <label className="block text-xs font-mono font-bold text-zinc-700 mb-1.5 flex items-center justify-between">
                   <span>Nueva Contraseña Personalizada:</span>
                   <button
                     type="button"
                     onClick={() => setShowNewPass(!showNewPass)}
-                    className="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                    className="text-[11px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1 cursor-pointer"
                   >
                     {showNewPass ? <EyeOff size={13} /> : <Eye size={13} />}
                     {showNewPass ? 'Ocultar' : 'Ver'}
@@ -245,19 +245,19 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                     placeholder="Escriba su nueva contraseña"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-xl font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#F1B400] transition-all"
+                    className="w-full p-3 bg-zinc-50 hover:bg-white focus:bg-white border border-zinc-300 focus:border-[#F1B400] rounded-xl font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#F1B400]/40 transition-all shadow-2xs"
                   />
                 </div>
               </div>
 
               {/* Campo: Confirmar Contraseña */}
               <div>
-                <label className="block text-xs font-mono font-bold text-zinc-300 mb-1.5 flex items-center justify-between">
+                <label className="block text-xs font-mono font-bold text-zinc-700 mb-1.5 flex items-center justify-between">
                   <span>Confirmar Nueva Contraseña:</span>
                   <button
                     type="button"
                     onClick={() => setShowConfirmPass(!showConfirmPass)}
-                    className="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                    className="text-[11px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1 cursor-pointer"
                   >
                     {showConfirmPass ? <EyeOff size={13} /> : <Eye size={13} />}
                     {showConfirmPass ? 'Ocultar' : 'Ver'}
@@ -270,72 +270,72 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                     placeholder="Repita la nueva contraseña exactamente igual"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-xl font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#F1B400] transition-all"
+                    className="w-full p-3 bg-zinc-50 hover:bg-white focus:bg-white border border-zinc-300 focus:border-[#F1B400] rounded-xl font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#F1B400]/40 transition-all shadow-2xs"
                   />
                 </div>
               </div>
 
               {/* Checklist en Vivo de Requisitos Normativos */}
-              <div className="p-3.5 bg-zinc-950/80 border border-zinc-800 rounded-xl space-y-2">
-                <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider text-zinc-400 block border-b border-zinc-800/80 pb-1">
+              <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2">
+                <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider text-zinc-500 block border-b border-zinc-200 pb-1">
                   Requisitos Obligatorios de la Nueva Contraseña:
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
                   {/* Regla 1: Mínimo 6 caracteres */}
-                  <div className={`flex items-center gap-2 ${hasMinLength ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                    {hasMinLength ? <Check size={14} className="text-emerald-400 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />}
+                  <div className={`flex items-center gap-2 ${hasMinLength ? 'text-emerald-700 font-bold' : 'text-zinc-400'}`}>
+                    {hasMinLength ? <Check size={14} className="text-emerald-600 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-300 shrink-0" />}
                     <span>Mínimo 6 caracteres</span>
                   </div>
 
                   {/* Regla 2: 1 Letra Mayúscula */}
-                  <div className={`flex items-center gap-2 ${hasUppercase ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                    {hasUppercase ? <Check size={14} className="text-emerald-400 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />}
+                  <div className={`flex items-center gap-2 ${hasUppercase ? 'text-emerald-700 font-bold' : 'text-zinc-400'}`}>
+                    {hasUppercase ? <Check size={14} className="text-emerald-600 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-300 shrink-0" />}
                     <span>Al menos 1 MAYÚSCULA (A-Z)</span>
                   </div>
 
                   {/* Regla 3: 1 Número */}
-                  <div className={`flex items-center gap-2 ${hasNumber ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                    {hasNumber ? <Check size={14} className="text-emerald-400 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />}
+                  <div className={`flex items-center gap-2 ${hasNumber ? 'text-emerald-700 font-bold' : 'text-zinc-400'}`}>
+                    {hasNumber ? <Check size={14} className="text-emerald-600 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-300 shrink-0" />}
                     <span>Al menos 1 número (0-9)</span>
                   </div>
 
                   {/* Regla 4: Carácter especial permitido */}
-                  <div className={`flex items-center gap-2 ${hasSpecialChar ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                    {hasSpecialChar ? <Check size={14} className="text-emerald-400 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />}
+                  <div className={`flex items-center gap-2 ${hasSpecialChar ? 'text-emerald-700 font-bold' : 'text-zinc-400'}`}>
+                    {hasSpecialChar ? <Check size={14} className="text-emerald-600 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-300 shrink-0" />}
                     <span>1 especial (ej: #, $, %, &, !, ¡, ?)</span>
                   </div>
 
                   {/* Regla 5: Sin espacios en blanco */}
-                  <div className={`flex items-center gap-2 ${hasNoSpaces ? 'text-emerald-400' : newPassword.length > 0 && !hasNoSpaces ? 'text-red-400' : 'text-zinc-500'}`}>
-                    {hasNoSpaces ? <Check size={14} className="text-emerald-400 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />}
+                  <div className={`flex items-center gap-2 ${hasNoSpaces ? 'text-emerald-700 font-bold' : newPassword.length > 0 && !hasNoSpaces ? 'text-rose-600' : 'text-zinc-400'}`}>
+                    {hasNoSpaces ? <Check size={14} className="text-emerald-600 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-300 shrink-0" />}
                     <span>Sin espacios en blanco</span>
                   </div>
 
                   {/* Regla 6: Sin signos de puntuación */}
-                  <div className={`flex items-center gap-2 ${hasNoPunctuation ? 'text-emerald-400' : newPassword.length > 0 && !hasNoPunctuation ? 'text-red-400' : 'text-zinc-500'}`}>
-                    {hasNoPunctuation ? <Check size={14} className="text-emerald-400 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />}
+                  <div className={`flex items-center gap-2 ${hasNoPunctuation ? 'text-emerald-700 font-bold' : newPassword.length > 0 && !hasNoPunctuation ? 'text-rose-600' : 'text-zinc-400'}`}>
+                    {hasNoPunctuation ? <Check size={14} className="text-emerald-600 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-300 shrink-0" />}
                     <span>Sin signos de puntuación (. , : ;)</span>
                   </div>
                 </div>
 
                 {/* Regla 7: Coincidencia */}
-                <div className={`flex items-center gap-2 pt-1 border-t border-zinc-800/80 text-[11px] font-mono ${passwordsMatch ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                  {passwordsMatch ? <Check size={14} className="text-emerald-400 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />}
+                <div className={`flex items-center gap-2 pt-1 border-t border-zinc-200 text-[11px] font-mono ${passwordsMatch ? 'text-emerald-700 font-bold' : 'text-zinc-400'}`}>
+                  {passwordsMatch ? <Check size={14} className="text-emerald-600 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border border-zinc-300 shrink-0" />}
                   <span>Las contraseñas coinciden exactamente</span>
                 </div>
               </div>
 
               {modalError && (
-                <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-mono flex items-center gap-2 animate-in fade-in">
-                  <AlertCircle size={16} className="text-red-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-mono flex items-center gap-2 animate-in fade-in">
+                  <AlertCircle size={16} className="text-rose-600 shrink-0" />
                   <span>{modalError}</span>
                 </div>
               )}
 
               {modalSuccess && (
-                <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center gap-2 animate-in fade-in">
-                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-850 text-xs font-mono flex items-center gap-2 animate-in fade-in">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
                   <span>{modalSuccess}</span>
                 </div>
               )}
@@ -345,7 +345,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 <button
                   type="submit"
                   disabled={!isPasswordValid || savingPassword}
-                  className="w-full py-3.5 px-4 rounded-xl text-xs sm:text-sm font-black font-mono uppercase tracking-wider bg-[#F1B400] hover:bg-[#d99c00] active:scale-[0.99] text-black shadow-lg shadow-[#F1B400]/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full py-3.5 px-4 rounded-xl text-xs sm:text-sm font-black font-mono uppercase tracking-wider bg-[#F1B400] hover:bg-[#e0a600] active:scale-[0.99] text-black shadow-lg shadow-amber-400/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ShieldCheck size={18} />
                   <span>{savingPassword ? 'Guardando Contraseña...' : 'Guardar Nueva Contraseña y Continuar'}</span>
@@ -361,11 +361,11 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       )}
 
       {/* Footer */}
-      <footer className="w-full bg-black/60 border-t border-zinc-800/80 py-4 px-4 text-center text-xs text-zinc-500 font-mono">
+      <footer className="w-full bg-white border-t border-zinc-200 py-4 px-4 text-center text-xs text-zinc-500 font-mono">
         <p>
           Plataforma Oficial de Evaluaciones
         </p>
-        <p className="text-[10px] text-zinc-600 mt-0.5">
+        <p className="text-[10px] text-zinc-400 mt-0.5">
           Caracas, Venezuela
         </p>
       </footer>
