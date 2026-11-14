@@ -46,12 +46,15 @@ export async function checkDatabaseStatus(): Promise<DatabaseStatus> {
       if (res.ok) {
         const data = await res.json();
         if (data && (data.connected !== undefined || data.pong)) {
+          const isConnected = data.connected !== undefined 
+            ? !!data.connected 
+            : !!(data.hasSupabaseUrl && data.hasSupabaseKey);
           return {
-            connected: !!data.connected,
+            connected: isConnected,
             provider: data.provider || (data.hasSupabaseUrl ? 'supabase' : 'none'),
             totalCollaborators: data.totalCollaborators || 0,
             totalEvaluations: data.totalEvaluations || 0,
-            message: data.message || 'Conexión activa con Supabase.'
+            message: data.message || (isConnected ? 'Conexión activa con Supabase.' : 'Base de datos no configurada.')
           };
         }
       }
