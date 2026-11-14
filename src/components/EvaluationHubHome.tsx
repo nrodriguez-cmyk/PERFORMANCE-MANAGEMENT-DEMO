@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Settings, Activity, Users, FileCheck, Star, ChevronRight, GraduationCap, Sparkles, Sliders,
+  Settings, Activity, Users, FileCheck, Star, ChevronRight, ChevronDown, GraduationCap, Sparkles, Sliders,
   User, ShieldCheck, Briefcase, LayoutGrid, Eye, KeyRound, FileSpreadsheet, BarChart3
 } from 'lucide-react';
 import { CANGURO_COLLABORATORS } from '../data/canguroUniverso';
@@ -16,6 +16,8 @@ interface EvaluationHubHomeProps {
   onOpenEvaluation?: (role: 'self' | 'supervisor' | 'peer' | 'subordinate') => void;
   onOpenDatabaseModal?: () => void;
   onAddNotification?: (notif: any) => void;
+  directorViewMode?: 'resultados_direccion' | 'evaluaciones';
+  onDirectorViewModeChange?: (mode: 'resultados_direccion' | 'evaluaciones') => void;
 }
 
 export function EvaluationHubHome({
@@ -24,18 +26,28 @@ export function EvaluationHubHome({
   currentUser: propUser,
   onOpenEvaluation,
   onOpenDatabaseModal,
-  onAddNotification
+  onAddNotification,
+  directorViewMode: propDirectorMode,
+  onDirectorViewModeChange
 }: EvaluationHubHomeProps) {
   const activeUser = propUser || getCurrentSession();
   const isMaster = isMasterAdministrator(activeUser);
   const isAdmin = activeUser?.role === 'admin' || activeUser?.role === 'gestor' || isMaster;
 
-  // For administrators, allow toggling between administrative modules and collaborator quadrants view
-  const [adminViewMode, setAdminViewMode] = useState<'admin_modules' | 'cuadrantes_colaborador'>('admin_modules');
+  // For administrators, allow toggling between administrative modules, director report, and collaborator quadrants view
+  const [adminViewMode, setAdminViewMode] = useState<'admin_modules' | 'resultados_direccion' | 'cuadrantes_colaborador'>('admin_modules');
   const [previewCollabId, setPreviewCollabId] = useState<string>(activeUser?.collaboratorId || CANGURO_COLLABORATORS[0]?.info.id || 'emp-001');
 
-  // Tab para usuarios Directores: alternar entre Informe Ejecutivo de Dirección y Cuadrantes Personales
-  const [directorTab, setDirectorTab] = useState<'informe_direccion' | 'mi_evaluacion'>('informe_direccion');
+  // Modo de visualización para Directores (Resultados de la Dirección vs Evaluaciones)
+  const [internalDirectorMode, setInternalDirectorMode] = useState<'resultados_direccion' | 'evaluaciones'>('resultados_direccion');
+  const currentDirectorMode = propDirectorMode || internalDirectorMode;
+
+  const handleDirectorModeChange = (mode: 'resultados_direccion' | 'evaluaciones') => {
+    setInternalDirectorMode(mode);
+    if (onDirectorViewModeChange) {
+      onDirectorViewModeChange(mode);
+    }
+  };
 
   // Live calculation of collaborator and evaluation metrics
   const totalCollaborators = CANGURO_COLLABORATORS.length;
@@ -55,49 +67,67 @@ export function EvaluationHubHome({
   // SI EL USUARIO NO ES ADMINISTRADOR
   // =========================================================================
   if (!isAdmin) {
-    const isDirector = activeUser?.role === 'director' || (activeUser?.position || '').toLowerCase().includes('director');
+    const posNormalized = `${activeUser?.position || ''} ${activeUser?.department || ''}`.toLowerCase();
+    const isDirector = activeUser?.role === 'director' || posNormalized.includes('director');
 
-    // VISTA EXCLUSIVA PARA DIRECTORES: INFORME EJECUTIVO + CAMPANA DE GAUSS + CUADRANTES
+    // VISTA EXCLUSIVA PARA DIRECTORES: INFORME EJECUTIVO + CAMPANA DE GAUSS + MENÚ DESPLEGABLE
     if (isDirector && activeUser) {
       return (
-        <div className="space-y-4">
-          {/* Selector de pestañas para el Director */}
-          <div className="bg-white border border-zinc-200 rounded-2xl p-2 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setDirectorTab('informe_direccion')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-                  directorTab === 'informe_direccion'
-                    ? 'bg-zinc-950 text-white shadow-xs'
-                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
-                }`}
-              >
-                <BarChart3 size={15} className={directorTab === 'informe_direccion' ? 'text-[#F1B400]' : 'text-zinc-400'} />
-                <span>Informe de Dirección (Campana de Gauss y Promedios)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDirectorTab('mi_evaluacion')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-                  directorTab === 'mi_evaluacion'
-                    ? 'bg-zinc-950 text-white shadow-xs'
-                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
-                }`}
-              >
-                <Users size={15} className={directorTab === 'mi_evaluacion' ? 'text-[#F1B400]' : 'text-zinc-400'} />
-                <span>Mi Evaluación y Equipo</span>
-              </button>
+        <div className="space-y-5">
+          {/* BARRA SUPERIOR DE CONTROL PARA EL DIRECTOR CON MENÚ DESPLEGABLE */}
+          <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-2 border-zinc-800 rounded-2xl p-4 shadow-lg text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-[#F1B400]/20 border border-[#F1B400]/40 flex items-center justify-center text-[#F1B400] shrink-0">
+                <BarChart3 size={24} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#F1B400] text-black">
+                    Portal de Director
+                  </span>
+                  <span className="text-xs text-zinc-300 font-mono font-bold">
+                    {activeUser.directorate || 'Dirección Corporativa'}
+                  </span>
+                </div>
+                <h1 className="text-lg font-black text-white leading-tight mt-0.5">
+                  {activeUser.fullName}
+                </h1>
+                <p className="text-xs text-zinc-400">
+                  {activeUser.position}
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-auto px-3 py-1 bg-amber-50 border border-amber-200 rounded-xl text-[11px] font-mono font-bold text-amber-950">
-              <span className="truncate max-w-[220px]">{activeUser.directorate}</span>
+            {/* MENÚ DESPLEGABLE SOLICITADO: RESULTADOS DE LA DIRECCIÓN Y EVALUACIONES */}
+            <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <label htmlFor="director-select-mode" className="text-xs font-bold text-zinc-300 whitespace-nowrap flex items-center gap-1.5">
+                <Sliders size={14} className="text-[#F1B400]" />
+                <span>Menú de Opciones:</span>
+              </label>
+              <div className="relative flex-1 sm:w-80">
+                <select
+                  id="director-select-mode"
+                  value={currentDirectorMode}
+                  onChange={(e) => handleDirectorModeChange(e.target.value as any)}
+                  className="w-full appearance-none bg-black text-[#F1B400] font-black text-sm px-4 py-2.5 pr-10 rounded-xl border-2 border-[#F1B400] hover:border-amber-300 focus:outline-none focus:ring-2 focus:ring-[#F1B400] shadow-md cursor-pointer transition-all"
+                  title="Menú Desplegable: Seleccionar entre Resultados de la Dirección o Evaluaciones"
+                >
+                  <option value="resultados_direccion" className="bg-zinc-900 text-white font-bold py-2">
+                    Resultados de la Dirección
+                  </option>
+                  <option value="evaluaciones" className="bg-zinc-900 text-white font-bold py-2">
+                    Evaluaciones
+                  </option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#F1B400]">
+                  <ChevronDown size={18} />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Contenido según pestaña activa */}
-          {directorTab === 'informe_direccion' ? (
+          {/* CONTENIDO SEGÚN LA OPCIÓN DEL MENÚ DESPLEGABLE */}
+          {currentDirectorMode === 'resultados_direccion' ? (
             <DirectorExecutiveReport
               currentUser={activeUser}
               onSelectCollaborator={onSelectCollaborator}
@@ -255,30 +285,47 @@ export function EvaluationHubHome({
         <div className="flex items-center gap-1.5 bg-zinc-100 p-1 rounded-xl w-full sm:w-auto">
           <button
             onClick={() => setAdminViewMode('admin_modules')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-black uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${adminViewMode === 'admin_modules'
+            className={`flex-1 sm:flex-none px-3.5 py-2 rounded-lg text-xs font-black uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${adminViewMode === 'admin_modules'
               ? 'bg-white text-zinc-950 shadow-xs'
               : 'text-zinc-600 hover:text-zinc-950'
               }`}
           >
             <Sliders size={14} className={adminViewMode === 'admin_modules' ? 'text-[#D99C00]' : 'text-zinc-500'} />
-            <span>Módulos de Gestión Administrativa</span>
+            <span>Módulos de Gestión</span>
+          </button>
+
+          <button
+            onClick={() => setAdminViewMode('resultados_direccion')}
+            className={`flex-1 sm:flex-none px-3.5 py-2 rounded-lg text-xs font-black uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${adminViewMode === 'resultados_direccion'
+              ? 'bg-white text-zinc-950 shadow-xs'
+              : 'text-zinc-600 hover:text-zinc-950'
+              }`}
+          >
+            <BarChart3 size={14} className={adminViewMode === 'resultados_direccion' ? 'text-[#D99C00]' : 'text-zinc-500'} />
+            <span>Resultados de la Dirección</span>
           </button>
 
           <button
             onClick={() => setAdminViewMode('cuadrantes_colaborador')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-black uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${adminViewMode === 'cuadrantes_colaborador'
+            className={`flex-1 sm:flex-none px-3.5 py-2 rounded-lg text-xs font-black uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${adminViewMode === 'cuadrantes_colaborador'
               ? 'bg-white text-zinc-950 shadow-xs'
               : 'text-zinc-600 hover:text-zinc-950'
               }`}
           >
             <LayoutGrid size={14} className={adminViewMode === 'cuadrantes_colaborador' ? 'text-[#D99C00]' : 'text-zinc-500'} />
-            <span>Portal de Evaluaciones (Vista Cuadrantes)</span>
+            <span>Evaluaciones (Cuadrantes)</span>
           </button>
         </div>
       </div>
 
-      {/* SI SE SELECCIONÓ VISTA CUADRANTES: MOSTRAR LOS CUADRANTES CON SELECTOR DE PERFIL */}
-      {adminViewMode === 'cuadrantes_colaborador' ? (
+      {/* SI SE SELECCIONÓ RESULTADOS DE LA DIRECCIÓN: MOSTRAR INFORME EJECUTIVO Y CAMPANA DE GAUSS */}
+      {adminViewMode === 'resultados_direccion' ? (
+        <DirectorExecutiveReport
+          currentUser={activeUser}
+          onSelectCollaborator={onSelectCollaborator}
+          onAddNotification={onAddNotification}
+        />
+      ) : adminViewMode === 'cuadrantes_colaborador' ? (
         <div className="space-y-4">
           <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">

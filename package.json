@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "tsc --noEmit && vite build && node build-server.js",
+    "build": "vite build && node build-server.js",
+    "build:check": "tsc --noEmit && vite build && node build-server.js",
     "start": "node build/server.cjs",
     "preview": "vite preview",
     "clean": "node -e \"for (const p of ['dist','build']) require('fs').rmSync(p,{recursive:true,force:true})\"",

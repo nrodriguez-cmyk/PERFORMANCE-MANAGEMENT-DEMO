@@ -18,6 +18,8 @@ import { OrganizationalDashboard } from './OrganizationalDashboard';
 import { PromotionsDashboard } from './PromotionsDashboard';
 import { SuccessionBankView } from './SuccessionBankView';
 import { EvaluationHubHome } from './EvaluationHubHome';
+import { DirectorExecutiveReport } from './DirectorExecutiveReport';
+import { CollaboratorEvaluationQuadrants } from './CollaboratorEvaluationQuadrants';
 import { PotentialLeadershipDashboard } from './PotentialLeadershipDashboard';
 import { ExecutiveTalentDashboard } from './ExecutiveTalentDashboard';
 import { PeopleAnalyticsEducationDashboard } from './PeopleAnalyticsEducationDashboard';
@@ -132,6 +134,20 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(() => getCurrentSession());
   const isMaster = isMasterAdministrator(currentUser);
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'gestor' || isMaster;
+  const isDirector = currentUser?.role === 'director' || 
+    (currentUser?.position || '').toLowerCase().includes('director') ||
+    (state?.employeeInfo?.position || '').toLowerCase().includes('director');
+
+  // Estado del menú desplegable del Director (Resultados de la Dirección vs Evaluaciones)
+  const [directorViewMode, setDirectorViewMode] = useState<'resultados_direccion' | 'evaluaciones'>('resultados_direccion');
+  const [showDirectorMenu, setShowDirectorMenu] = useState(false);
+
+  useEffect(() => {
+    if (isDirector && !isAdmin) {
+      setCurrentStage('inicio');
+      setDirectorViewMode('resultados_direccion');
+    }
+  }, [currentUser?.username, isDirector, isAdmin]);
 
   useEffect(() => {
     const handleAuthChange = (e: any) => {
@@ -507,6 +523,32 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
                 <KeyRound size={15} className={currentStage === 'recuperacion_clave' ? 'text-black' : 'text-[#F1B400] shrink-0'} />
                 <span className="hidden md:inline text-[11px] font-mono font-bold">Recuperar Clave</span>
               </button>
+            )}
+
+            {/* MENÚ DESPLEGABLE OFICIAL DEL DIRECTOR: RESULTADOS DE LA DIRECCIÓN Y EVALUACIONES */}
+            {isDirector && (
+              <div className="relative">
+                <div className="flex items-center gap-1.5 bg-zinc-900 border-2 border-[#F1B400] rounded-xl px-2.5 py-1.5 shadow-md">
+                  <span className="text-[11px] font-mono font-bold text-[#F1B400] uppercase hidden sm:inline">
+                    Menú Director:
+                  </span>
+                  <div className="relative inline-block">
+                    <select
+                      value={directorViewMode}
+                      onChange={(e) => {
+                        setDirectorViewMode(e.target.value as any);
+                        setCurrentStage('inicio');
+                      }}
+                      className="appearance-none bg-black text-[#F1B400] font-black text-xs px-3 py-1 pr-7 rounded-lg border border-zinc-700 cursor-pointer hover:border-[#F1B400] focus:outline-none focus:ring-1 focus:ring-[#F1B400]"
+                      title="Menú Desplegable: Seleccionar entre Resultados de la Dirección o Evaluaciones"
+                    >
+                      <option value="resultados_direccion">Resultados de la Dirección</option>
+                      <option value="evaluaciones">Evaluaciones</option>
+                    </select>
+                    <ChevronDown size={14} className="text-[#F1B400] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Notifications */}
@@ -1409,6 +1451,32 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
 
         {/* MAIN STAGE CONTENT (FULL REMAINING CANVAS) */}
         <main className="flex-1 min-w-0 w-full space-y-6">
+          {/* BANNER DE RETORNO PARA DIRECTORES CUANDO ESTÁN EN DETALLES */}
+          {isDirector && !isAdmin && currentStage !== 'inicio' && (
+            <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-zinc-800 p-3.5 rounded-2xl text-white flex items-center justify-between shadow-md">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F1B400] animate-pulse"></span>
+                <span className="text-xs font-mono font-bold text-[#F1B400] uppercase">
+                  Portal de Dirección
+                </span>
+                <span className="text-xs text-zinc-400">
+                  • Vista detallada de colaborador
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentStage('inicio');
+                  setDirectorViewMode('resultados_direccion');
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-[#F1B400] hover:bg-amber-400 text-black font-black text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Home size={14} />
+                <span>Volver a Resultados de la Dirección</span>
+              </button>
+            </div>
+          )}
+
           {/* ========================================================================= */}
           {/* 1. INICIO: PORTAL CENTRAL & IMÁGENES REFERENCIALES INTERACTIVAS           */}
           {/* ========================================================================= */}
@@ -1434,6 +1502,8 @@ export function AdminComparisonModule({ state, onUpdateState }: AdminComparisonM
               currentUser={currentUser}
               onOpenDatabaseModal={() => setShowDbModal(true)}
               onAddNotification={(notif) => onUpdateState({ ...state, notifications: [notif, ...(state.notifications || [])] })}
+              directorViewMode={directorViewMode}
+              onDirectorViewModeChange={(mode) => setDirectorViewMode(mode)}
             />
           )}
 

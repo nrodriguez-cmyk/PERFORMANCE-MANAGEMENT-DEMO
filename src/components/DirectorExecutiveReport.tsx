@@ -13,23 +13,48 @@ import {
 } from '../services/directorPermissionService';
 import { MERIT_TIERS, MeritTier } from '../types';
 
+const OFFICIAL_DIRECTORATES = [
+  'Dirección de Administración y Finanzas',
+  'Dirección de Talento Humano',
+  'Dirección de Operaciones',
+  'Dirección de Transporte y Logística',
+  'Dirección de Control Interno',
+  'Dirección Comercial',
+  'Dirección de Compras',
+  'Dirección de Tecnología de la Información'
+];
+
 interface DirectorExecutiveReportProps {
   currentUser: AuthenticatedUser;
   onSelectCollaborator?: (id: string) => void;
   onAddNotification?: (notif: any) => void;
+  initialDirectorate?: string;
 }
 
 export function DirectorExecutiveReport({
   currentUser,
   onSelectCollaborator,
-  onAddNotification
+  onAddNotification,
+  initialDirectorate
 }: DirectorExecutiveReportProps) {
-  const directorDir = currentUser.directorate || 'Dirección de Administración y Finanzas';
-  const normDirectorDir = normalizeDirectorateKey(directorDir);
+  // Dirección seleccionada (por defecto la asignada al Director)
+  const [selectedDirectorate, setSelectedDirectorate] = useState<string>(() => {
+    const raw = initialDirectorate || currentUser.directorate || '';
+    if (raw) {
+      const normRaw = normalizeDirectorateKey(raw);
+      const match = OFFICIAL_DIRECTORATES.find(d => {
+        const normD = normalizeDirectorateKey(d);
+        return normD.includes(normRaw) || normRaw.includes(normD);
+      });
+      if (match) return match;
+      return raw;
+    }
+    return 'Dirección de Administración y Finanzas';
+  });
 
   // Estado de permisos para ver resultados individuales
   const [permissionStatus, setPermissionStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>(() =>
-    getDirectorPermissionStatus(directorDir)
+    getDirectorPermissionStatus(selectedDirectorate)
   );
   const [requestSending, setRequestSending] = useState(false);
   const [requestSuccessMsg, setRequestSuccessMsg] = useState('');
@@ -39,20 +64,28 @@ export function DirectorExecutiveReport({
   // Escuchar cambios reactivos en los permisos (cuando el admin aprueba)
   useEffect(() => {
     const handlePermChange = () => {
-      setPermissionStatus(getDirectorPermissionStatus(directorDir));
+      setPermissionStatus(getDirectorPermissionStatus(selectedDirectorate));
     };
     window.addEventListener('canguro_director_permission_change', handlePermChange);
     return () => window.removeEventListener('canguro_director_permission_change', handlePermChange);
-  }, [directorDir]);
+  }, [selectedDirectorate]);
 
-  // 1. Filtrar la población adscrita a esta Dirección
+  // 1. Filtrar la población adscrita a esta Dirección con emparejamiento exhaustivo
   const directorateCollaborators = useMemo(() => {
+    const normTarget = normalizeDirectorateKey(selectedDirectorate);
+    const tokens = normTarget.split(/\s+/).filter(t => t.length > 3 && !['PARA', 'DE', 'DEL', 'LOS', 'LAS'].includes(t));
+
     return CANGURO_COLLABORATORS.filter(c => {
       const cDir = normalizeDirectorateKey(c.info?.directorate || '');
       const cDept = normalizeDirectorateKey(c.info?.department || '');
-      return cDir.includes(normDirectorDir) || normDirectorDir.includes(cDir) || cDept.includes(normDirectorDir);
+
+      if (cDir === normTarget || cDept === normTarget) return true;
+      if (cDir.includes(normTarget) || normTarget.includes(cDir)) return true;
+      if (cDept.includes(normTarget) || normTarget.includes(cDept)) return true;
+
+      return tokens.some(t => cDir.includes(t) || cDept.includes(t));
     });
-  }, [normDirectorDir]);
+  }, [selectedDirectorate]);
 
   // Total población de la Dirección
   const populationCount = directorateCollaborators.length;
@@ -205,7 +238,7 @@ export function DirectorExecutiveReport({
     const res = requestDirectorAccess({
       fullName: currentUser.fullName,
       position: currentUser.position,
-      directorate: directorDir,
+      directorate: selectedDirectorate,
       username: currentUser.username
     });
     setPermissionStatus('pending');
@@ -280,10 +313,27 @@ export function DirectorExecutiveReport({
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white flex items-center gap-2">
-              <Building2 className="text-[#F1B400]" size={24} />
-              {directorDir}
-            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white flex items-center gap-2">
+                <Building2 className="text-[#F1B400]" size={24} />
+                <span>{selectedDirectorate}</span>
+              </h1>
+
+              {/* Selector Desplegable de Dirección */}
+              <div className="relative inline-block">
+                <select
+                  value={selectedDirectorate}
+                  onChange={(e) => setSelectedDirectorate(e.target.value)}
+                  className="appearance-none bg-zinc-900 text-[#F1B400] text-xs font-bold px-3 py-1.5 pr-8 rounded-xl border border-zinc-700 cursor-pointer hover:border-[#F1B400] focus:outline-none focus:ring-1 focus:ring-[#F1B400]"
+                  title="Seleccionar Dirección para consultar resultados"
+                >
+                  {OFFICIAL_DIRECTORATES.map(dir => (
+                    <option key={dir} value={dir}>{dir}</option>
+                  ))}
+                </select>
+                <ChevronDown size={13} className="text-[#F1B400] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
 
             <p className="text-xs text-zinc-400 font-medium max-w-2xl leading-relaxed">
               Consolidación estadística del desempeño de toda la población adscrita a la dirección. Incluye la Curva de Calibración Normal (Campana de Gauss), desglose de promedios por sección evaluativa y baremos por cargo.
@@ -481,7 +531,7 @@ export function DirectorExecutiveReport({
                 Campana de Gauss: Distribución de la Dirección
               </h2>
               <p className="text-xs text-zinc-500">
-                Población Total: {populationCount} colaboradores adscritos a {directorDir}.
+                Población Total: {populationCount} colaboradores adscritos a {selectedDirectorate}.
               </p>
             </div>
           </div>
@@ -608,7 +658,7 @@ export function DirectorExecutiveReport({
               Nivel de Desempeño por Cargo en la Dirección
             </h2>
             <p className="text-xs text-zinc-500">
-              Totalización jerárquica de puntuaciones para los roles de {directorDir}.
+              Totalización jerárquica de puntuaciones para los roles de {selectedDirectorate}.
             </p>
           </div>
         </div>
