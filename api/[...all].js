@@ -785,9 +785,147 @@ function buildOfficialEvaluationEmailHtml(data) {
   </html>
   `;
 }
-var apiRouter = express.Router();
-apiRouter.post("/send-email", async (req, res) => {
-  const { to, subject, body, employeeName, idNumber, position, roleLabel, url } = req.body;
+app.get(["/api/ping", "/ping", "/api/status", "/status", "/api/db/status", "/db/status"], async (_req, res) => {
+  try {
+    const status = await testConnection();
+    return res.json({
+      pong: true,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      env: process.env.NODE_ENV || "unknown",
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+      ...status
+    });
+  } catch (err) {
+    return res.json({
+      pong: true,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      connected: false,
+      provider: "none",
+      totalCollaborators: 0,
+      totalEvaluations: 0,
+      message: err.message
+    });
+  }
+});
+app.post(["/api/ping", "/ping"], async (req, res) => {
+  try {
+    const { action } = req.body || {};
+    if (action === "sync-census") {
+      const result = await syncCollaboratorsBatch(req.body.collaborators);
+      return res.json(result);
+    }
+    if (action === "sync-positions") {
+      const result = await syncJobPositionsBatch(req.body.positions);
+      return res.json(result);
+    }
+    if (action === "login") {
+      const result = await authenticateUser(req.body.username, req.body.password);
+      return res.json(result);
+    }
+    if (action === "init") {
+      const result = await initTables();
+      return res.json(result);
+    }
+    if (action === "save-evaluation") {
+      const result = await saveEvaluation(req.body.evaluation);
+      return res.json(result);
+    }
+    if (action === "save-pdi") {
+      const result = await savePdi(req.body.pdi);
+      return res.json(result);
+    }
+    return res.status(400).json({ success: false, message: `Acci\xF3n desconocida: ${action}` });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.get(["/api/db/status", "/api/status", "/db/status", "/status"], async (_req, res) => {
+  try {
+    const status = await testConnection();
+    return res.json(status);
+  } catch (err) {
+    return res.status(500).json({ connected: false, message: err.message });
+  }
+});
+app.post(["/api/auth/login", "/api/login", "/auth/login", "/login"], async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: "Usuario y contrase\xF1a requeridos" });
+    }
+    const result = await authenticateUser(username, password);
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.post(["/api/db/init", "/api/init", "/db/init", "/init"], async (_req, res) => {
+  try {
+    const result = await initTables();
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.post(["/api/db/sync-census", "/api/sync-census", "/db/sync-census", "/sync-census"], async (req, res) => {
+  try {
+    const { collaborators } = req.body || {};
+    if (!Array.isArray(collaborators) || collaborators.length === 0) {
+      return res.status(400).json({ success: false, message: "Se requiere una lista de colaboradores" });
+    }
+    const result = await syncCollaboratorsBatch(collaborators);
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.post(["/api/db/sync-positions", "/api/sync-positions", "/db/sync-positions", "/sync-positions"], async (req, res) => {
+  try {
+    const { positions } = req.body || {};
+    if (!Array.isArray(positions) || positions.length === 0) {
+      return res.status(400).json({ success: false, message: "Se requiere una lista de cargos" });
+    }
+    const result = await syncJobPositionsBatch(positions);
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.post(["/api/db/evaluations", "/api/evaluations", "/db/evaluations", "/evaluations"], async (req, res) => {
+  try {
+    const result = await saveEvaluation(req.body);
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.get(["/api/db/evaluations/:collaboratorId", "/api/evaluations/:collaboratorId", "/db/evaluations/:collaboratorId", "/evaluations/:collaboratorId"], async (req, res) => {
+  try {
+    const evaluations = await getEvaluationsByCollaborator(req.params.collaboratorId);
+    return res.json({ success: true, evaluations });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.post(["/api/db/pdi", "/api/pdi", "/db/pdi", "/pdi"], async (req, res) => {
+  try {
+    const result = await savePdi(req.body);
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.get(["/api/db/pdi/:collaboratorId", "/api/pdi/:collaboratorId", "/db/pdi/:collaboratorId", "/pdi/:collaboratorId"], async (req, res) => {
+  try {
+    const pdi = await getPdiByCollaborator(req.params.collaboratorId);
+    return res.json({ success: true, pdi });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+app.post(["/api/send-email", "/send-email"], async (req, res) => {
+  const { to, subject, body, employeeName, idNumber, position, roleLabel, url } = req.body || {};
   if (!to || !subject) {
     return res.status(400).json({ error: "Faltan campos requeridos: to, subject" });
   }
@@ -841,8 +979,8 @@ apiRouter.post("/send-email", async (req, res) => {
     message: `Convocatoria generada formalmente para ${to}. Enlace y plantilla listos.`
   });
 });
-apiRouter.post("/generate-situational", async (req, res) => {
-  const { descriptor, position } = req.body;
+app.post(["/api/generate-situational", "/generate-situational"], async (req, res) => {
+  const { descriptor, position } = req.body || {};
   const keyFuncs = descriptor?.keyFunctions && descriptor.keyFunctions.length > 0 ? descriptor.keyFunctions : descriptor?.responsibilities || ["Supervisi\xF3n y control diario del piso de venta"];
   const techKnow = descriptor?.technicalKnowledge && descriptor.technicalKnowledge.length > 0 ? descriptor.technicalKnowledge : ["Manejo de sistemas POS y facturaci\xF3n fiscal"];
   const aiClient = getAiClient();
@@ -889,8 +1027,8 @@ Responde \xDANICAMENTE con un array JSON v\xE1lido de las 5 preguntas.`;
     ]
   });
 });
-apiRouter.post("/evaluate-promotion", async (req, res) => {
-  const { targetPosition, interviewScore } = req.body;
+app.post(["/api/evaluate-promotion", "/evaluate-promotion"], async (req, res) => {
+  const { targetPosition, interviewScore } = req.body || {};
   const mockAnalysis = `An\xE1lisis de Idoneidad:
 El postulante demuestra un 94.6% de consistencia entre sus competencias observadas y las exigencias del cargo "${targetPosition || "Posici\xF3n Evaluada"}". Se recomienda su incorporaci\xF3n con acompa\xF1amiento ejecutivo en los primeros 60 d\xEDas.`;
   return res.json({
@@ -899,101 +1037,6 @@ El postulante demuestra un 94.6% de consistencia entre sus competencias observad
     verdict: (interviewScore || 4.5) >= 4.5 ? "Altamente Id\xF3neo / Prioritario" : "Elegible / Apto"
   });
 });
-apiRouter.post("/auth/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ success: false, message: "Usuario y contrase\xF1a requeridos" });
-    }
-    const result = await authenticateUser(username, password);
-    return res.json(result);
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-apiRouter.get("/db/status", async (_req, res) => {
-  try {
-    const status = await testConnection();
-    return res.json(status);
-  } catch (err) {
-    return res.status(500).json({ connected: false, message: err.message });
-  }
-});
-apiRouter.post("/db/init", async (_req, res) => {
-  try {
-    const result = await initTables();
-    return res.json(result);
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-apiRouter.post("/db/sync-census", async (req, res) => {
-  try {
-    const { collaborators } = req.body;
-    if (!Array.isArray(collaborators) || collaborators.length === 0) {
-      return res.status(400).json({ success: false, message: "Se requiere una lista de colaboradores" });
-    }
-    const result = await syncCollaboratorsBatch(collaborators);
-    return res.json(result);
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-apiRouter.post("/db/sync-positions", async (req, res) => {
-  try {
-    const { positions } = req.body;
-    if (!Array.isArray(positions) || positions.length === 0) {
-      return res.status(400).json({ success: false, message: "Se requiere una lista de cargos" });
-    }
-    const result = await syncJobPositionsBatch(positions);
-    return res.json(result);
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-apiRouter.post("/db/evaluations", async (req, res) => {
-  try {
-    const result = await saveEvaluation(req.body);
-    return res.json(result);
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-apiRouter.get("/db/evaluations/:collaboratorId", async (req, res) => {
-  try {
-    const evaluations = await getEvaluationsByCollaborator(req.params.collaboratorId);
-    return res.json({ success: true, evaluations });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-apiRouter.post("/db/pdi", async (req, res) => {
-  try {
-    const result = await savePdi(req.body);
-    return res.json(result);
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-apiRouter.get("/db/pdi/:collaboratorId", async (req, res) => {
-  try {
-    const pdi = await getPdiByCollaborator(req.params.collaboratorId);
-    return res.json({ success: true, pdi });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-});
-apiRouter.get("/ping", (_req, res) => {
-  return res.json({
-    pong: true,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    env: process.env.NODE_ENV || "unknown",
-    hasSupabaseUrl: !!process.env.SUPABASE_URL,
-    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY
-  });
-});
-app.use("/api", apiRouter);
-app.use("/", apiRouter);
 var apiApp_default = app;
 export {
   apiApp_default as default

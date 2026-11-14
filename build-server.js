@@ -39,7 +39,8 @@ const mappings = [
   // Ping
   { entry: 'src/server/handlers/ping.ts', out: 'api/ping.js' },
   // App completa
-  { entry: 'src/server/apiApp.ts', out: 'api/index.js' }
+  { entry: 'src/server/apiApp.ts', out: 'api/index.js' },
+  { entry: 'src/server/apiApp.ts', out: 'api/[...all].js' }
 ];
 
 for (const m of mappings) {

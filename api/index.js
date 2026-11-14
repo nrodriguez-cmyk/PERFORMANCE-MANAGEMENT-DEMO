@@ -785,14 +785,60 @@ function buildOfficialEvaluationEmailHtml(data) {
   </html>
   `;
 }
-app.get(["/api/ping", "/ping"], (_req, res) => {
-  return res.json({
-    pong: true,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    env: process.env.NODE_ENV || "unknown",
-    hasSupabaseUrl: !!process.env.SUPABASE_URL,
-    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY
-  });
+app.get(["/api/ping", "/ping", "/api/status", "/status", "/api/db/status", "/db/status"], async (_req, res) => {
+  try {
+    const status = await testConnection();
+    return res.json({
+      pong: true,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      env: process.env.NODE_ENV || "unknown",
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+      ...status
+    });
+  } catch (err) {
+    return res.json({
+      pong: true,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      connected: false,
+      provider: "none",
+      totalCollaborators: 0,
+      totalEvaluations: 0,
+      message: err.message
+    });
+  }
+});
+app.post(["/api/ping", "/ping"], async (req, res) => {
+  try {
+    const { action } = req.body || {};
+    if (action === "sync-census") {
+      const result = await syncCollaboratorsBatch(req.body.collaborators);
+      return res.json(result);
+    }
+    if (action === "sync-positions") {
+      const result = await syncJobPositionsBatch(req.body.positions);
+      return res.json(result);
+    }
+    if (action === "login") {
+      const result = await authenticateUser(req.body.username, req.body.password);
+      return res.json(result);
+    }
+    if (action === "init") {
+      const result = await initTables();
+      return res.json(result);
+    }
+    if (action === "save-evaluation") {
+      const result = await saveEvaluation(req.body.evaluation);
+      return res.json(result);
+    }
+    if (action === "save-pdi") {
+      const result = await savePdi(req.body.pdi);
+      return res.json(result);
+    }
+    return res.status(400).json({ success: false, message: `Acci\xF3n desconocida: ${action}` });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
 });
 app.get(["/api/db/status", "/api/status", "/db/status", "/status"], async (_req, res) => {
   try {
